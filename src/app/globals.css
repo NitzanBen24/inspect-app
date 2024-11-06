@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: 'Heebo', sans-serif !important;
+  }
+
+.bg-theme {
+    /* background-color: #dc782f; */
+    background-color:#dc782fcf;
+}
