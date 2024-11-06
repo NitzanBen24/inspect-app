@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { pdfForm } from '../models/models';
+import { PdfForm } from '../models/models';
 
 interface Props {
-  list: pdfForm[];
-  open: (form:pdfForm) => void
+  list: PdfForm[];
+  open: (form:PdfForm) => void
 }
 
 const FormsList = ({ list, open }: Props) => {
@@ -15,7 +15,7 @@ const FormsList = ({ list, open }: Props) => {
     return <><div>שגיאה! חסר תוכן</div></>
   }
 
-  const handleClick = (form: pdfForm) => {
+  const handleClick = (form: PdfForm) => {
     open(form);
   }
 
