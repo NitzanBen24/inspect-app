@@ -21,8 +21,14 @@ export async function POST(req: NextRequest) {
 
     // Send email
     try {
-      // Alpha version =>
-      let clientEmail = 'nitzanben24@gmail.com';
+
+      // Alpha version => Testing
+      let clientEmail = 'tcelctric@gmail.com';
+      if (form.formFields.find((item: any) => item.name === 'is-admin')) {
+        clientEmail = 'nitzanben24@gmail.com';
+      }
+          
+      
       await sendEmail({ sendTo: clientEmail, pdfDoc: pdfDoc });
       return NextResponse.json({ success: 'PDF sent via email:'  }, { status: 200 });
     } catch (mailError) {

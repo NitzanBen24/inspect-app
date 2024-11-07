@@ -65,6 +65,9 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         });
     }, [file.formFields, provider]);
 
+    // Testing
+    const sendRef = useRef<HTMLInputElement | null>(null);    
+
     console.log('Form.Render=>',file)
 
     const handlePostSuccess = (data: any) => {                       
@@ -151,17 +154,35 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             });
         }
         
+
+
     }
 
     const prepareForm = () => { 
 
+        // Alpha version => Testing
+        console.log('Prepare=>',sendRef.current)
+        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="is-admin"]')
+        if (sendToMe && sendToMe.checked) {
+            console.log('sendToMe->', sendToMe.checked)
+            file.formFields.push({
+                name: 'is-admin',
+                type: 'TextArea',
+                require:false,                 
+            });
+        }
+            
         insertUserData();
+
+        setField([{['propper']: '*'}, {['zero']: '0'}]);
        
         if (!validatePower()) {
             openModal();
             return false;
         }
+
         setDate();
+        
         return true;
     }
 
@@ -319,6 +340,12 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             <button className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
             </button>
+
+            {/* Alpha version => Testing */}
+            <div ref={ sendRef } className='stagging-send flex'>
+                <label>Send to me</label>
+                <input type="checkbox" name="is-admin" defaultChecked={true} id=""/>
+            </div>
         </div>
 
         
@@ -336,37 +363,3 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 
 export default Form;
 
-// // Outside the component
-// const renderBlock = (block: FormField[], fieldsNameMap: any) => {
-//     if (block.length === 0) return null;
-
-//     return (
-//         <div className='form-block py-2 text-right border-b-2 border-slate-800'>
-//             {block.map((field) => (
-//                 <div key={`field-${field.name}`} className='form-item my-2 flex'>
-//                     {/* {addField(field)} */}
-//                     <label className='block text-sm min-w-20 text-right font-medium text-black'>
-//                         :{fieldsNameMap[field.name.replace('-ls', '')]}
-//                     </label>
-//                 </div>
-//             ))}
-//         </div>
-//     );
-// };
-
-
-// const fillFormFields = useCallback(() => {   
-//     file.formFields.map((item) => {            
-//         if (formData.hasOwnProperty(item.name) && formData[item.name]) {                
-//             item.value = formData[item.name];
-//         }            
-//     });
-
-//     file.formFields.push({
-//         name: 'comments',
-//         type: 'TextArea',
-//         require:true, 
-//         value: formData['comments']
-//     });
-
-// }, [file.formFields]);
