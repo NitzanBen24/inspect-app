@@ -54,7 +54,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'Post.send.email: Missing Email Options' }, { status: 500 });
       }        
       
-      //await sendEmail({ pdfFile: pdfDoc, options: emailOptions});      
+      await sendEmail({ pdfFile: pdfDoc, options: emailOptions});      
       return NextResponse.json({ success: 'Form has been sent successfuly:' }, { status: 200 });
     } catch (mailError) {
       console.error('Route.Error sending email:', mailError);
