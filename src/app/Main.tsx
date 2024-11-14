@@ -36,11 +36,11 @@ const Main = () => {
                     <div className="user-toggle">                                                
                         {user.isLoggedIn ? <button className='border-2 p-1 text-xs border-black text-blck rounded-lg' onClick={ disconnectUser }>Logout</button> : ''}
                     </div>
-                    <div className="logo">
+                    <div className="logo p-2">
                         <Image
-                            src="/img/logo.png"
+                            src="/img/logo.jpg"
                             alt="Company Logo"
-                            layout="responsive"
+                            // layout="responsive"
                             width={86}
                             height={76}
                             objectFit="contain"
