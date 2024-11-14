@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { User } from './types';
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY || '';
+const SECRET_KEY = process.env.JWT_SECRET_KEY as string || '';
 const COOKIE_NAME = 'sessionId';
 
 /** Function to verify JWT token and authorize user */
