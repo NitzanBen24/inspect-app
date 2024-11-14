@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, PDFFont } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import fontkit from '@pdf-lib/fontkit';
-import { FormField, PdfForm } from '../models/models';
+import { FormField, PdfForm } from '../utils/types';
 
 
 // Get all pdf files
@@ -23,7 +22,7 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
           try {
               // Load and parse PDF document
               const existingPdfBytes = await fs.promises.readFile(filePath);
-              const pdfDoc = await PDFDocument.load(existingPdfBytes);                                          
+              const pdfDoc = await PDFLibDocument.load(existingPdfBytes);                                          
               const pdfForm = pdfDoc.getForm();  
               
               if (pdfForm) {
@@ -51,32 +50,26 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
   }
 };
 
-// insert user data to pdf file
-export const preparePdf = async (file: PdfForm) => {
+// Add user data to pdf file
+export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: unknown }> => {
 
   try {
-    // Path to your existing PDF template
+    // Load the original PDF with pdf-lib
     const pdfPath = path.resolve('./public/templates/'+file.name+'.pdf');
     const existingPdfBytes = await fs.promises.readFile(pdfPath);
-
-    // Load the PDFDocument from the existing PDF
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const pdfDoc = await PDFLibDocument.load(existingPdfBytes);
     
     // Register fontkit to use custom fonts
     pdfDoc.registerFontkit(fontkit);
 
     // Load the Noto Sans Hebrew font from your local path
     const fontPath = path.resolve('./src/app/fonts/OpenSans-VariableFont_wdth,wght.ttf');
-    const fontBytes = fs.readFileSync(fontPath);
-
-    // Embed the custom Hebrew font in the PDF
+    const fontBytes = fs.readFileSync(fontPath);    
     const hebrewFont = await pdfDoc.embedFont(fontBytes);    
 
-    // Get the form and fill fields
+    // Fill form fields in the main PDF with pdf-lib
     const form = pdfDoc.getForm();
-
-    // insert data to pdf file
-    form.getFields().map((field) => {
+    form.getFields().forEach((field) => {
       let formField = file.formFields.find((item: FormField) => item.name === field.getName());
       
       let fieldText = formField?.value || '';      
@@ -87,40 +80,99 @@ export const preparePdf = async (file: PdfForm) => {
           form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
         }        
         form.getTextField(field.getName()).updateAppearances(hebrewFont);
-      }             
-
+      }     
     });
- 
-    const comments = file.formFields.find((item: FormField) => item.name === 'comments');    
-    if (comments && comments.value) {
-      const lastPage = pdfDoc.getPage(pdfDoc.getPages().length-1);
-      const pageSize = lastPage.getSize();
-      lastPage.setFont(hebrewFont);
-      lastPage.drawText(comments.value, {
-        x: pageSize.width - 100,
-        y: pageSize.height - 200,
-        size: 12,
-      });
-    }
 
+    // form.getFields().map((field) => {
+    //   let formField = file.formFields.find((item: FormField) => item.name === field.getName());
+      
+    //   let fieldText = formField?.value || '';      
+
+    //   form.getTextField(field.getName()).setText(fieldText);
+    //   if (containsHebrew(fieldText)) {                
+    //     if (containsDigits(fieldText)) {          
+    //       form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
+    //     }        
+    //     form.getTextField(field.getName()).updateAppearances(hebrewFont);
+    //   }             
+    // });
+
+    addComments(pdfDoc, file.formFields, hebrewFont)
+   
     // Flatten the form fields (make them uneditable)
     form.flatten();
     // Save the edited PDF
     const pdfBytes = await pdfDoc.save();
     return pdfBytes;
   } catch (pdfError) {
-    //console.error('Error generating PDF=>', pdfError);
+    console.error('Error generating PDF=>', pdfError);
     return { error: pdfError };     
   }
 };
+
+
+function addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFFont) {
+  const comments = fields.find((item: FormField) => item.name === 'comments');    
+
+  if (comments && comments.value) {
+    const lastPage = doc.getPage(doc.getPages().length - 1);
+    const pageSize = lastPage.getSize();
+    const margin = 50;
+    const maxWidth = pageSize.width - margin * 2;
+    const fontSize = 12;
+    const lineHeight = fontSize * 1.2;
+
+    // Split text by newlines first
+    const lines = comments.value.split('\n').flatMap((line) => wrapText(line, hebrewFont, fontSize, maxWidth));
+
+    let yPosition = pageSize.height - 200;
+
+    lines.forEach((line) => {
+      if (yPosition < margin) return;
+
+      // Calculate the line width to align it to the right for RTL
+      const lineWidth = hebrewFont.widthOfTextAtSize(line, fontSize);
+      const xPosition = pageSize.width - margin - lineWidth;
+
+      lastPage.drawText(line, {
+        x: xPosition,
+        y: yPosition,
+        size: fontSize,
+        font: hebrewFont,
+      });
+
+      yPosition -= lineHeight;
+    });
+  }
+}
+
+function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  words.forEach((word) => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+    if (testWidth <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+
+  return lines;
+}
 
 const containsHebrew = (text: string) => /[\u0590-\u05FF]/.test(text);
 
 const containsDigits = (text: string) => /\d/.test(text);
 
-const reverseNumbersInHebrewText = (text: string) => {
-  // Detect all digit sequences in the text and reverse them
-  return text.replace(/\d+/g, (match) => match.split('').reverse().join(''));
-};
+// Detect all digit sequences in the text and reverse them
+const reverseNumbersInHebrewText = (text: string) => text.replace(/\d+/g, (match) => match.split('').reverse().join(''));
 
 

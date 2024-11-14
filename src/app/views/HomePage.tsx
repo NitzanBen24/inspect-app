@@ -1,6 +1,6 @@
 'use client';
 import FormsList from "../components/FormsList";
-import { Manufacture, PdfForm, Technicians } from "../models/models";
+import { Manufacture, PdfForm, Technicians } from "../utils/types";
 import { useState } from "react";
 import Form from "../components/Form";
 import { useFetch } from "../hooks/useQuery";
@@ -40,8 +40,6 @@ const HomePage = () => {
       enabled: successForms && !!manufactures,
     }
   )
-  
-  console.log('isSuccess=>', successForms)
 
   const isLoading = loadingForms  || loadingManufactures || loadingTechnicians;
   const isError = errorForms || errorManufactures || errorTechnicians;
@@ -69,7 +67,8 @@ const HomePage = () => {
 
 
   return (
-    <>
+    <>      
+      
       {form? <Form close={ closeForm } file={ form } manufactures={ manufactures } technicians={ technicians } /> : forms && <FormsList open={ openForm } list={ forms }/>}
     </>
   )

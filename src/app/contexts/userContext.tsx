@@ -1,27 +1,28 @@
 'use client'; // Enable client-side rendering in Next.js 14
 
 import { createContext, useState, ReactNode } from 'react';
+import { User } from '../utils/types';
 
-export interface User {
-    isLoggedIn: boolean;
-} 
+// export interface User {
+//   isLoggedIn: boolean;
+// } 
 
 
 export const UserContext = createContext<{
     user: User;
-    logIn: () => void;
+    logIn: (user:User) => void;
     logOut: () => void;
   } | undefined>(undefined);
   
   // UserProvider component to provide user context
   export const UserProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User>({ isLoggedIn: false });
+    const [user, setUser] = useState<User>({ isLoggedIn: false, id:0, name:'', email: '' });
   
     // Function to log in the user
-    const logIn = () => setUser({ isLoggedIn: true });
+    const logIn = (user: User) => setUser({ isLoggedIn: true, id: user.id, name: user.name, email: user.email });
   
     // Function to log out the user
-    const logOut = () => setUser({ isLoggedIn: false });
+    const logOut = () => setUser({ isLoggedIn: false, id:0, name:'', email: '' });
   
     return (
       <UserContext.Provider value={{ user, logIn, logOut }}>

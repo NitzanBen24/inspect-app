@@ -10,3 +10,7 @@ body {
     /* background-color: #dc782f; */
     background-color:#dc782fcf;
 }
+
+.form-body {
+  direction: rtl;
+}

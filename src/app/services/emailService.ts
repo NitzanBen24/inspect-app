@@ -1,5 +1,6 @@
 // app/api/email/sendEmail.ts
 import nodemailer from 'nodemailer';
+import { EmailInfo } from '../utils/types';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -10,24 +11,31 @@ const transporter = nodemailer.createTransport({
 });
 
 interface MailOptions {
-  sendTo: string;
-  pdfDoc: any;
+  pdfFile: any;
+  options: EmailInfo;  
 }
 
 /**
  * 
  * Add provider to subject email
  */
-export async function sendEmail({ sendTo, pdfDoc }: MailOptions): Promise<void> {
+export async function sendEmail({ pdfFile, options }: MailOptions): Promise<void> {
+  console.log('sendEmail.fileName::',options)
+
+  if (!options.reciver || !options.customer) {
+    console.error('Error sending email: file name or reciver is missing');
+    throw new Error('Failed to send email: file name or reciver is missing!');
+  }
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: sendTo,
-    subject: 'Your PDF Document',
-    text: 'Please find your PDF document attached.',
+    to: options.reciver,
+    subject: options.provider || '',
+    text: options.message || '',
     attachments: [
       {
-        filename: 'form-data.pdf',
-        content: pdfDoc,
+        filename: options.customer+'.pdf',
+        content: pdfFile,
         encoding: 'base64',
       },
     ],

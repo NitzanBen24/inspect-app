@@ -4,39 +4,30 @@ import React, { useState } from 'react';
 import { useUser } from '../hooks/useUser';
 import { usePost } from '../hooks/useQuery';
 import Modal from '../components/Modal';
-import { AxiosError } from 'axios';
 
-
-interface Props {
-  // login: () => void
-  isLogged: (isLogged: boolean) => void
-}
-
-const LoginForm = ({ isLogged }: Props) => {
+const LoginForm = () => {
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  //const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const[message, setMessage] = useState<string>('');
-  //const { logIn } = useUser();
+  
+  const { logIn } = useUser();
 
-  const handleLoginSuccess = (data: any) => {
+  const handleLoginSuccess = (data: any) => {    
     console.log('handleLoginSuccess=>',data)
-    isLogged(data.success);
+    logIn(data.user);
   }
   const handleLoginError = (error: any) => {
-    console.log('handleLoginError=>', error.response?.data.error)  
     setMessage(error.response?.data.error);
-    openModal();  
-      
+    openModal();      
   };
 
-  const {mutate: authUser } = usePost('login',handleLoginSuccess, handleLoginError)
+  const {mutate: connectUser } = usePost('login',handleLoginSuccess, handleLoginError)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); 
-    authUser({
+    connectUser({
       email: username,
       password: password
     });

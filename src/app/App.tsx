@@ -15,7 +15,7 @@ const App = () => {
         <>
         <QueryClientProvider client={queryClient}>
             <UserProvider>
-                <Container fluid className='my-3'>
+                <Container fluid className='h-screen'>
                     <Main />
                 </Container>
             </UserProvider>

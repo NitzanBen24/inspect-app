@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { PdfForm } from '../models/models';
+import { PdfForm } from '../utils/types';
 
 interface Props {
   list: PdfForm[];
@@ -10,7 +10,6 @@ interface Props {
 
 const FormsList = ({ list, open }: Props) => {
 
-  console.log('FormList=>', list)
   if (!list.length) {
     return <><div>שגיאה! חסר תוכן</div></>
   }

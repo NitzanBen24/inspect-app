@@ -31,3 +31,7 @@ export interface Technicians {
     phone: string;
     profession: string;
 }
+
+export interface User {
+    //{"userId":1,"email":"nitzanben24@gmail.com","iat":1731228502,"exp":1731833302}
+}

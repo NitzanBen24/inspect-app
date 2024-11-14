@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getUserByEmail } from '../lib/dbObject';
+import { User } from '../utils/types';
 
 
 
-export const authenticateUser = async (email: string, password: string) => {
+export const isUserExists = async (email: string, password: string): Promise<User | null> => {
     
     try {                
-        const user = await getUserByEmail(email);         
+
+        const user = await getUserByEmail(email);       
+        
         if (!user) {
             console.error('authenticateUser.null::')
             return null
@@ -16,8 +19,10 @@ export const authenticateUser = async (email: string, password: string) => {
             console.error('authenticateUser.pass.notEqual::')
             return null;
         }
+
         const { password: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+        
+        return userWithoutPassword as User;
     } catch(error) {
         console.error('Error authenticating user:', error);
         return null;

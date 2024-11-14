@@ -11,7 +11,7 @@ export const formFieldMap = {
     panel: ['punits', 'ppower', 'panel-ls', 'pmodel'],
     techs: ['electrician-ls', 'elicense', 'ephone', 'eemail','planner-ls', 'plicense', 'pphone', 'pemail'],
     data: ['volt-l', 'volt-n', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
-    end: ['comments']
+    end: ['comments, message']
 }
 
 export const fieldsNameMap: any = {

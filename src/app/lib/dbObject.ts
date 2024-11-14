@@ -1,6 +1,7 @@
+import { User } from "../utils/types";
 import { supabase } from "./supabase";
 
-export const getAllUsers = async (): Promise<any[]> => {
+export const getAllUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase
     .from('Users')
     .select('*');
@@ -26,7 +27,8 @@ export const getUserByEmail = async (email : string): Promise<any> => {
     return data;
 }
 
-export const getManufactures = async () => {
+/** Add Return Type => remove any!! */
+export const getManufactures = async (): Promise<any[]> => {
     const { data , error } = await supabase
     .from('Manufactures')
     .select('*');
@@ -38,15 +40,15 @@ export const getManufactures = async () => {
     return data;
 }
 
-export const getTechnicians = async () => {
+/** Add Return Type => remove any!! */
+export const getTechnicians = async (): Promise<any[]> => {
     const { data , error } = await supabase
     .from('Technicians')
     .select('*');
 
     if (error) {
         throw new Error(`Error fetching forms: ${error.message}`);
-    }
-    // console.log('getTechnicians::',data)
+    }    
     return data;
 }
 

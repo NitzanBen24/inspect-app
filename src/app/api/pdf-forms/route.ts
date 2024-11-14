@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/app/services/emailService';
 import { preparePdf, getAllForms } from '@/app/services/pdfService';
+import { EmailInfo, FormField, PdfForm } from '@/app/utils/types';
 
-export async function POST(req: NextRequest) {
+
+const prepareEmail = (fields: FormField[]): EmailInfo | undefined => {
+  
+  const options: EmailInfo = {};  
+  const emailFields = ['customer', 'provider', 'message', 'reciver'];
+  
+  fields.forEach((item) => {
+    if (emailFields.includes(item.name) && item.value) {
+      options[item.name as keyof EmailInfo] = item.value;
+    }
+  });
+
+  // Alpha version => Testing
+  options.reciver = 'tcelctric@gmail.com';
+  const reciverField = fields.find((item) => item.name === 'reciver');
+  if (reciverField) {    
+    options.reciver = 'nitzanben24@gmail.com';
+  }
+  
+  // Return the final EmailInfo object 
+  return options;
+};
+
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {   
 
-    const form = await req.json();
+    const form: PdfForm = await req.json();
     if (!form) {
       return NextResponse.json({ error: 'Missing form to send!' }, { status: 400 });
     }
@@ -21,16 +46,16 @@ export async function POST(req: NextRequest) {
 
     // Send email
     try {
-
-      // Alpha version => Testing
-      let clientEmail = 'tcelctric@gmail.com';
-      if (form.formFields.find((item: any) => item.name === 'is-admin')) {
-        clientEmail = 'nitzanben24@gmail.com';
-      }
-          
       
-      await sendEmail({ sendTo: clientEmail, pdfDoc: pdfDoc });
-      return NextResponse.json({ success: 'PDF sent via email:'  }, { status: 200 });
+      
+      const emailOptions: EmailInfo | undefined = prepareEmail(form.formFields);
+      
+      if (emailOptions === undefined) {
+        return NextResponse.json({ error: 'Post.send.email: Missing Email Options' }, { status: 500 });
+      }        
+      
+      //await sendEmail({ pdfFile: pdfDoc, options: emailOptions});      
+      return NextResponse.json({ success: 'Form has been sent successfuly:' }, { status: 200 });
     } catch (mailError) {
       console.error('Route.Error sending email:', mailError);
       return NextResponse.json({ error: 'Post.send.email: ' + mailError }, { status: 500 });
@@ -45,7 +70,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export const GET = async (req: NextRequest) => {
+export const GET = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const forms = await getAllForms();     
     

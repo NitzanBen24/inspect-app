@@ -1,12 +1,13 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FormField, FormState, Manufacture, PdfForm, Technicians } from '../models/models';
+import { FormField, FormState, Manufacture, PdfForm, Technicians } from '../utils/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useRef } from 'react';
 import { usePost } from '../hooks/useQuery';
 import Modal from './Modal';
 import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/AppContent';
+import { useUser } from '../hooks/useUser';
 
 
 
@@ -51,11 +52,12 @@ const calcPower = (formNode:HTMLDivElement | null): number | false => {
 
 const Form = ({ file, manufactures, technicians , close }: Props) => {
 
+    const { user } = useUser();
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);        
     const providers = useMemo(() => { return [...new Set(technicians.map((item: Technicians) => item.employer))]; }, [technicians]);
     const [provider, setProvider] = useState<string | boolean>(false);     
-    const[message, setMessage] = useState<string>('');
-    const formRef = useRef<HTMLDivElement | null>(null);    
+    const [message, setMessage] = useState<string>('');
+    const formRef = useRef<HTMLDivElement | null>(null); 
     const formBlocks = useMemo(() => {
         return Object.entries(formFieldMap).map(([key, value]) => {
             // Filter the form fields for the current block
@@ -65,20 +67,20 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         });
     }, [file.formFields, provider]);
 
-    // Testing
-    const sendRef = useRef<HTMLInputElement | null>(null);    
+    console.log('Form.render=>', file.formFields)
 
-    console.log('Form.Render=>',file)
+    const sendRef = useRef<HTMLInputElement | null>(null);        
 
-    const handlePostSuccess = (data: any) => {                       
-        setMessage(data.success)
+    const handleSendSuccess = (data: any) => {                         
+        setMessage(data.success);
+        cleanForm();
         openModal();
     }
-    const handlePostError = (error: unknown) => {        
+    const handleSendError = (error: unknown) => {        
         setMessage("Error in sending data!");
         openModal();        
     };
-    const { mutate:sendForm, isPending } = usePost('pdf-forms',handlePostSuccess, handlePostError)
+    const { mutate:sendForm, isPending } = usePost('pdf-forms',handleSendSuccess, handleSendError);
 
     const goBack = () => {
         close();
@@ -108,28 +110,47 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         }
     }
 
-    const validatePower = () => {
-        const ppower = calcPower(formRef.current);        
-        if (!ppower) { //** Mark input in red */  
-            setMessage(message + formMessages['missingPower']);      
-            return false;
-        }
-        // Add power value to the field if valid       
-        setField([{['ppower']: ppower.toString()}])
-        return true;
-    }
-
     const setDate = () => setField([{['date']: formatHebrewDate()}]);
 
-    const insertUserData = () => {
-        const fieldsCollection = formRef.current?.getElementsByClassName('form-field')
+    const cleanForm = () => {        
+        if (!formRef.current) {
+            goBack();
+            return;
+        }
+                
+        formRef.current.querySelectorAll<HTMLElement>('.form-field').forEach((item) => {            
+            if (item instanceof HTMLInputElement || item instanceof HTMLTextAreaElement) {                
+                item.value = ''; // Clear the value for input and textarea
+            } else if (item instanceof HTMLSelectElement) {                
+                item.selectedIndex = 0; // Reset the selected option to the first option for select
+            }
+        });
+
+        const providerSelect = formRef.current.querySelector<HTMLSelectElement>('[name="provider"]');
+        if (providerSelect) {
+            providerSelect.selectedIndex = 0 ;
+        }
+
+        const fieldsToRemove = ['comments', 'message', 'provider', 'reciver'];
+        file.formFields = file.formFields.filter((item) => !fieldsToRemove.includes(item.name));
+
+
+        file.formFields.forEach((item) => {            
+            delete item.value;            
+        });                
+    }
+
+    const fillFormFields = () => {
+
+        const fieldsCollection = formRef.current?.getElementsByClassName('form-field');
+        
         if (fieldsCollection) {
             [...fieldsCollection].forEach(field => {
                 const inputField = field as HTMLInputElement | HTMLTextAreaElement;                  
                 const fieldName = inputField.getAttribute('name'); // Get the name attribute                
                 const fieldValue = inputField.value;
                 if (fieldName) {                                        
-                    let currFiled = file.formFields.find((item) => item.name === fieldName);
+                    const currFiled = file.formFields.find((item) => item.name === fieldName);
                     if (currFiled) {
                         currFiled.value = fieldValue;
 
@@ -138,47 +159,70 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                             currFiled.value = '*'
                         }
 
-                    }
+                    }                    
 
-                    if (fieldName === 'comments') {
+                    if (fieldName === 'comments' || fieldName === 'message') {                        
                         file.formFields.push({
-                            name: 'comments',
+                            name: fieldName,
                             type: 'TextArea',
                             require:true, 
                             value: fieldValue,
                         });
                     }
-
-                    
                 }                 
             });
         }
+
+        // Add provider
+        let providerNode = formRef.current?.querySelector<HTMLInputElement>('[name="provider"]');
+        let newProviderNode = formRef.current?.querySelector<HTMLInputElement>('[name="new-provider"]');
+        let providerVal = newProviderNode?.value || providerNode?.value;
         
+        file.formFields.push({
+            name: 'provider',
+            type: 'TextArea',
+            require: true, 
+            value: providerVal,
+        });        
+        
+    }
 
+    const checkVoltage = () => {
+        let nVoltNode = formRef.current?.querySelector<HTMLInputElement>('[name="volt-n"]');
+        let lVoltNode = formRef.current?.querySelector<HTMLInputElement>('[name="volt-l"]');
 
+        if (!nVoltNode?.value || !lVoltNode?.value ) {
+            console.log('No Voltage=>')
+            // Add to table 7
+            setField([{['irrelavent']: '*'}, {['zero']: '0'}]);
+        } else {
+            console.log('Yes Voltage=>')
+            // Add to table 7
+            setField([{['propper']: '*'}, {['zero']: '0'}]);
+        }
     }
 
     const prepareForm = () => { 
 
-        // Alpha version => Testing
-        console.log('Prepare=>',sendRef.current)
-        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="is-admin"]')
-        if (sendToMe && sendToMe.checked) {
-            console.log('sendToMe->', sendToMe.checked)
+        // Alpha version => Testing        
+        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]')        
+        if (sendToMe && sendToMe.checked) {            
             file.formFields.push({
-                name: 'is-admin',
+                name: 'reciver',
                 type: 'TextArea',
                 require:false,                 
             });
         }
             
-        insertUserData();
+        fillFormFields();
 
-        setField([{['propper']: '*'}, {['zero']: '0'}]);
+        //checkVoltage();
        
-        if (!validatePower()) {
-            openModal();
-            return false;
+        setField([{['propper']: '*'}, {['zero']: '0'}]);
+
+        const ppower = calcPower(formRef.current);
+        if (ppower) {
+            setField([{['ppower']: ppower.toString()}]);
         }
 
         setDate();
@@ -191,22 +235,20 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             //** Mark input in red */
             openModal();
             return;
-        }        
+        }         
         // Send form data        
         sendForm(file);
     };   
 
-    //const setField = useCallback((name: string, val: string) => {
     const setField = useCallback((fields: FormState[]) => {
-        fields.map((item) => {            
+        fields.forEach((item) => {
             Object.entries(item).forEach(([key, value]) => {                
                 let field = file.formFields.find((item) => item.name === key)        
                 if (field) {        
                     field.value = value;
                 }
-              });
-            
-        })        
+              });            
+        });    
     }, [file.formFields]);
 
     const addField = (field: FormField) => {        
@@ -225,7 +267,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                         </select>;
         } else {// Textfield    
             if (field.name === 'notes') {
-                fileNode = <textarea className='text-right p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm' name={field.name} disabled={isPending} ></textarea>
+                fileNode = <textarea className='p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm' name={field.name} disabled={isPending} ></textarea>
             } else {                    
                 fileNode =  <input 
                                 className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
@@ -270,9 +312,10 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         return false;
     }
 
-    const addSelectProvider = () => {
+    const addProviderFields = () => {
         return (<>
-            <div className='form-item my-2 text-right flex' >            
+            <div className='form-item my-2 flex'> 
+                <label className='block text-sm min-w-20 content-center font-medium text-black'>ספק עבודה:</label>
                 <select 
                     className='mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
                     key={'providers.select'} 
@@ -284,9 +327,20 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     {providers.map((item) => (
                         <option key={ item + '.val' } value={ item }>{ item }</option>
                     ))}
-                </select>
-                <label className='block text-sm min-w-20 content-center text-right font-medium text-black'>:ספק עבודה</label>
+                </select>                
             </div>
+
+            <div className='form-item my-2 flex'> 
+                <label className='block text-sm min-w-20 content-center font-medium text-black'>הוסף ספק:</label>
+                <input 
+                    className='mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
+                    key={'provider.input'} 
+                    type="text" 
+                    name={'new-provider'}                                
+                    disabled={isPending} 
+                    required />
+            </div>
+
         </>)
     }
 
@@ -297,19 +351,36 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             if (block.length === 0) return null;
 
             return (
-                <div key={`block-${index}`} className='form-block py-2 text-right border-b-2 border-slate-800'>
+                <div key={`block-${index}`} className='form-block py-2 border-b-2 border-slate-800'>
                     {block.map(field => (
-                        <div key={`field-${field.name}`} className='form-item my-2 flex'>
-                            {addField(field)} {/* Assuming addField is defined elsewhere */}
-                            <label className='block text-sm min-w-20 text-right font-medium text-black'>
-                                :{fieldsNameMap[field.name.replace('-ls', '')]}
+                        <div key={`field-${field.name}`} className='form-item my-2 flex'>                             
+                            <label className='block text-sm min-w-20 font-medium text-black'>
+                                {fieldsNameMap[field.name.replace('-ls', '')]}:
                             </label>
+                            {addField(field)}
                         </div>
                     ))}
                 </div>
             );
         });
     }, [formBlocks, fieldsNameMap]);
+
+    const addTextFields = (fields: [{ name: string, text: string }, { name: string, text: string }]) => {
+        return fields.map((field: { name: string, text: string }) => (            
+            <div className='form-block' key={'block-' + field.name}>
+                <div className='form-item my-2 flex' key={file.name + '.' +field.name}>
+                    <label className='block text-sm min-w-20 content-center font-medium text-black'>
+                       {field.text}
+                    </label>
+                    <textarea key={ field.name + '.text'}
+                        className='form-field p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm'
+                        name={field.name}
+                        disabled={isPending}
+                    ></textarea>
+                </div>
+            </div>
+        ));
+    };
     
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { 
@@ -317,25 +388,21 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     }
 
     return (
-        <>
-        <div className='p-2'>            
-            <FontAwesomeIcon icon={faArrowLeft} onClick={goBack} />
-        </div>
+        <>        
         
         <div className='mx-auto p-2'  key={file.name+'.form'}>
-            <h2 className='text-2xl font-bold text-center text-gray-800'>{'טופס הצהרת בודק' }</h2>                              
+            <div className='form-head flex'>
+                <div className='p-2'>            
+                    <FontAwesomeIcon icon={faArrowLeft} onClick={goBack} />
+                </div>
+                <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס הצהרת בודק' }</h2>
+            </div>            
             <div ref={ formRef } className='form-body my-2'>   
-                <div className='form-block text-right'> 
-                    { addSelectProvider() }
+                <div className='form-block'> 
+                    { addProviderFields() }
                 </div>
                 { renderBlocks }
-                {/** change comments to notes => notes comes requierd from server */}
-                <div className='form-block text-right'>
-                    <div className='form-item my-2 flex' key={file.name+'.comments'}>                    
-                        <textarea className='form-field text-right p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm' name="comments" disabled={isPending} ></textarea>
-                        <label className='block text-sm min-w-20 content-center text-right font-medium text-black'>:הערות</label>                   
-                    </div>
-                </div>                
+                { addTextFields([{name: 'comments', text: 'הערות:'}, { name: 'message', text: 'הודעה'}]) }                
             </div>
             <button className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
@@ -344,7 +411,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             {/* Alpha version => Testing */}
             <div ref={ sendRef } className='stagging-send flex'>
                 <label>Send to me</label>
-                <input type="checkbox" name="is-admin" defaultChecked={true} id=""/>
+                <input type="checkbox" name="reciver" defaultChecked={true} id=""/>
             </div>
         </div>
 

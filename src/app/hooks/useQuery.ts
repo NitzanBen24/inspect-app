@@ -1,5 +1,6 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
+import { FetchOptions } from "../utils/types";
 
 const fetchData = async <T>(path: string): Promise<T> => {
     try {
@@ -10,19 +11,13 @@ const fetchData = async <T>(path: string): Promise<T> => {
     }
 };
 
-interface FetchOptions {
-    enabled?: boolean;
-    retry?: boolean | number;
-}
-
 export const useFetch = <T>(key: string, path: string, options?: FetchOptions): UseQueryResult<T> => {
     return useQuery({
         queryKey: [key], 
         queryFn: () => fetchData<T>(path),
         //enabled: Boolean(key && path),
         enabled: options?.enabled ?? true, // Default to true if not specified
-        retry: options?.retry ?? 1, // Default retry to 3, or customize        
-        //retry: 0,// not done!!!!!!
+        retry: 1,
     });
 };
 
