@@ -13,8 +13,9 @@ const fetchData = async <T>(path: string): Promise<T> => {
 
 export const useFetch = <T>(key: string, path: string, options?: FetchOptions): UseQueryResult<T> => {
     return useQuery({
-        queryKey: [key], 
+        queryKey: [key, path], 
         queryFn: () => fetchData<T>(path),
+        refetchOnWindowFocus: false,
         //enabled: Boolean(key && path),
         enabled: options?.enabled ?? true, // Default to true if not specified
         retry: 1,
