@@ -13,7 +13,7 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
       const pdfFolder = path.resolve('./public/templates');
 
       // Get all PDF files asynchronously
-      const pdfFiles = (await fs.promises.readdir(pdfFolder)).filter(file => file.endsWith('.pdf'));
+      const pdfFiles = (await fs.promises.readdir(pdfFolder)).filter(file => file.endsWith('.pdf'));      
       
       for (const file of pdfFiles) {
           const filePath = path.join(pdfFolder, file);
@@ -64,38 +64,42 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
 
     // Load the Noto Sans Hebrew font from your local path
     const fontPath = path.resolve('./src/app/fonts/OpenSans-VariableFont_wdth,wght.ttf');
-    const fontBytes = fs.readFileSync(fontPath);    
+    const boldFontPath = path.resolve('./src/app/fonts/OpenSans-Bold.ttf');
+    
+    const fontBytes = fs.readFileSync(fontPath);
+    const boldFontBytes = fs.readFileSync(boldFontPath); 
+    
     const hebrewFont = await pdfDoc.embedFont(fontBytes);    
+    const boldFont = await pdfDoc.embedFont(boldFontBytes);
+
+
 
     // Fill form fields in the main PDF with pdf-lib
     const form = pdfDoc.getForm();
+
     form.getFields().forEach((field) => {
       let formField = file.formFields.find((item: FormField) => item.name === field.getName());
       
-      let fieldText = formField?.value || '';      
+      let fieldText = formField?.value || form.getTextField(field.getName()).getText() || '';      
 
       form.getTextField(field.getName()).setText(fieldText);
       if (containsHebrew(fieldText)) {                
         if (containsDigits(fieldText)) {          
           form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
         }        
-        form.getTextField(field.getName()).updateAppearances(hebrewFont);
+        form.getTextField(field.getName()).updateAppearances(hebrewFont);        
       }     
     });
 
-    // form.getFields().map((field) => {
-    //   let formField = file.formFields.find((item: FormField) => item.name === field.getName());
-      
-    //   let fieldText = formField?.value || '';      
-
-    //   form.getTextField(field.getName()).setText(fieldText);
-    //   if (containsHebrew(fieldText)) {                
-    //     if (containsDigits(fieldText)) {          
-    //       form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
-    //     }        
-    //     form.getTextField(field.getName()).updateAppearances(hebrewFont);
-    //   }             
-    // });
+    let statusField = file.formFields.find((item: FormField) => item.name === 'status')    
+    if (statusField?.value) {      
+      if (statusField.value == 'complete') {
+        form.getTextField('approve').updateAppearances(boldFont);
+      } else if ((statusField.value == 'incomplete')) {
+        form.getTextField('decline').updateAppearances(boldFont);        
+        pdfDoc.removePage(pdfDoc.getPages().length - 2)
+      }
+    }
 
     addComments(pdfDoc, file.formFields, hebrewFont)
    
@@ -109,6 +113,7 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     return { error: pdfError };     
   }
 };
+
 
 
 function addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFFont) {

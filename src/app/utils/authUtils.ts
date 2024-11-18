@@ -10,7 +10,7 @@ const COOKIE_NAME = 'sessionId';
 export async function authorizeUser(req: NextRequest): Promise<NextResponse> {
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
-
+  
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' });
   }
@@ -38,7 +38,7 @@ export function addUserTkn(user: User): NextResponse {
     // Create a JWT with user data    
     const payload = { id: user.id,name: user.name, email: user.email };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '1d' });
-
+    
     // Set the JWT as an HTTP-only cookie
     const response = NextResponse.json({ success: true, user: user });
 
@@ -52,6 +52,7 @@ function setCookie(response: NextResponse, name: string, value: string, maxAge: 
       secure: process.env.NODE_ENV === 'production',
       maxAge,
       path: '/',
+      sameSite: 'strict',
     });
     return response;
 }

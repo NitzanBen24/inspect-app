@@ -1,6 +1,6 @@
 // app/api/email/sendEmail.ts
 import nodemailer from 'nodemailer';
-import { EmailInfo } from '../utils/types';
+import { EmailInfo, FormField } from '../utils/types';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -15,10 +15,29 @@ interface MailOptions {
   options: EmailInfo;  
 }
 
-/**
- * 
- * Add provider to subject email
- */
+export const prepareEmail = (fields: FormField[]): EmailInfo | undefined => {
+  
+  const options: EmailInfo = {};  
+  const emailFields = ['customer', 'provider', 'message', 'reciver'];
+  
+  fields.forEach((item) => {
+    if (emailFields.includes(item.name) && item.value) {
+      options[item.name as keyof EmailInfo] = item.value;
+    }
+  });
+
+  // Alpha version => Testing
+  options.reciver = 'tcelctric@gmail.com';
+  const reciverField = fields.find((item) => item.name === 'reciver');
+  if (reciverField) {    
+    options.reciver = 'nitzanben24@gmail.com';
+  }
+  
+  // Return the final EmailInfo object 
+  return options;
+};
+
+// Send Email 
 export async function sendEmail({ pdfFile, options }: MailOptions): Promise<void> {
   console.log('sendEmail.fileName::',options)
 

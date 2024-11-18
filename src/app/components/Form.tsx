@@ -8,6 +8,7 @@ import { usePost } from '../hooks/useQuery';
 import Modal from './Modal';
 import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/AppContent';
 import { useUser } from '../hooks/useUser';
+import { elementsWithValueExist } from '../utils/helper';
 
 
 
@@ -44,8 +45,8 @@ const calcPower = (formNode:HTMLDivElement | null): number | false => {
 
     const modelValue = parseFloat(modelNode.value);
     const unitValue = parseFloat(unitNode.value);
-
-    return !isNaN(modelValue) && !isNaN(unitValue) ? unitValue * modelValue * 0.001 : false;
+    const result = (unitValue * modelValue * 0.001).toFixed(2);
+    return !isNaN(modelValue) && !isNaN(unitValue) ? parseFloat(result) : false;
     
 }
 
@@ -67,7 +68,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         });
     }, [file.formFields, provider]);
 
-    console.log('Form.render=>', file.formFields)
+    //console.log('Form.render=>', file.formFields)
 
     const sendRef = useRef<HTMLInputElement | null>(null);        
 
@@ -131,7 +132,8 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             providerSelect.selectedIndex = 0 ;
         }
 
-        const fieldsToRemove = ['comments', 'message', 'provider', 'reciver'];
+        // Remove fields to prevent duplication
+        const fieldsToRemove = ['comments', 'message', 'provider', 'reciver','status'];
         file.formFields = file.formFields.filter((item) => !fieldsToRemove.includes(item.name));
 
 
@@ -141,9 +143,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     }
 
     const fillFormFields = () => {
-
         const fieldsCollection = formRef.current?.getElementsByClassName('form-field');
-        
         if (fieldsCollection) {
             [...fieldsCollection].forEach(field => {
                 const inputField = field as HTMLInputElement | HTMLTextAreaElement;                  
@@ -153,12 +153,6 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     const currFiled = file.formFields.find((item) => item.name === fieldName);
                     if (currFiled) {
                         currFiled.value = fieldValue;
-
-                        // Alpha version => force '*' in field, until we change form input to checkbocx in cliet side ****************
-                        if (fieldName === 'check' && fieldValue.length > 0) {
-                            currFiled.value = '*'
-                        }
-
                     }                    
 
                     if (fieldName === 'comments' || fieldName === 'message') {                        
@@ -171,41 +165,62 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     }
                 }                 
             });
-        }
+        }         
+    }
+
+    const addFormFields = () => {
+
+        let newFields = [];
 
         // Add provider
         let providerNode = formRef.current?.querySelector<HTMLInputElement>('[name="provider"]');
         let newProviderNode = formRef.current?.querySelector<HTMLInputElement>('[name="new-provider"]');
         let providerVal = newProviderNode?.value || providerNode?.value;
-        
+
         file.formFields.push({
             name: 'provider',
             type: 'TextArea',
             require: true, 
             value: providerVal,
-        });        
-        
-    }
+        });
 
-    const checkVoltage = () => {
-        let nVoltNode = formRef.current?.querySelector<HTMLInputElement>('[name="volt-n"]');
-        let lVoltNode = formRef.current?.querySelector<HTMLInputElement>('[name="volt-l"]');
-
-        if (!nVoltNode?.value || !lVoltNode?.value ) {
-            console.log('No Voltage=>')
-            // Add to table 7
-            setField([{['irrelavent']: '*'}, {['zero']: '0'}]);
-        } else {
-            console.log('Yes Voltage=>')
-            // Add to table 7
-            setField([{['propper']: '*'}, {['zero']: '0'}]);
+        // If mcurrent & rcurrent are filled add check and scurrent to formFields
+        if (elementsWithValueExist(file.formFields,['mcurrent', 'rcurrent'])) {
+            newFields.push({['check']: '*'}, {['scurrent']: '300'});             
         }
+
+        //checkVoltage
+        if (!elementsWithValueExist(file.formFields,['volt-n', 'volt-l'])) {
+            newFields.push({['irrelavent']: '*'}, {['zero']: ''}, {['propper']: ''});            
+        } else {
+            newFields.push({['propper']: '*'}, {['zero']: '0'});            
+        }
+
+        let ocheckNode = formRef.current?.querySelector<HTMLInputElement>('[name="ocheck"]');         
+        if (ocheckNode && ocheckNode.checked) {            
+            newFields.push({['opass']: 'תקין'});            
+        } else {            
+            newFields.push({['ofail']: '*'});                  
+        }
+
+
+        let statusVal = formRef.current?.querySelector<HTMLInputElement>('[name="status"]:checked')?.value;
+        if (statusVal) {
+            file.formFields.push({
+                name: 'status',
+                type: 'TextArea',
+                require:false,
+                value:statusVal,
+            })
+        }
+
+        setField(newFields);
     }
 
     const prepareForm = () => { 
 
         // Alpha version => Testing        
-        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]')        
+        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]');    
         if (sendToMe && sendToMe.checked) {            
             file.formFields.push({
                 name: 'reciver',
@@ -215,10 +230,8 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         }
             
         fillFormFields();
-
-        //checkVoltage();
-       
-        setField([{['propper']: '*'}, {['zero']: '0'}]);
+        
+        addFormFields();
 
         const ppower = calcPower(formRef.current);
         if (ppower) {
@@ -354,10 +367,16 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 <div key={`block-${index}`} className='form-block py-2 border-b-2 border-slate-800'>
                     {block.map(field => (
                         <div key={`field-${field.name}`} className='form-item my-2 flex'>                             
-                            <label className='block text-sm min-w-20 font-medium text-black'>
+                            <label className='block content-center text-sm min-w-20 font-medium text-black'>
                                 {fieldsNameMap[field.name.replace('-ls', '')]}:
                             </label>
                             {addField(field)}
+                            {field.name === 'omega' && (
+                                <>
+                                <label className='block content-center mr-2 text-sm min-w-10 py-auto font-medium text-black'>תקין:</label>
+                                <input type="checkbox" name='ocheck' defaultChecked={true}/>
+                                </>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -402,8 +421,23 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     { addProviderFields() }
                 </div>
                 { renderBlocks }
-                { addTextFields([{name: 'comments', text: 'הערות:'}, { name: 'message', text: 'הודעה'}]) }                
+                { addTextFields([{name: 'comments', text: 'הערות:'}, { name: 'message', text: 'הודעה'}]) }  
+
+                <div className='flex status-wrap mt-3'>
+                    <label className='block text-sm min-w-20 content-center font-medium text-black'>תוצאה:</label>
+                    <div className='flex items-center'>
+                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">תקין:</label>
+                        <input className='mx-2' type="radio" name='status' value="complete" defaultChecked={true} id='status-complete' />
+                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">לא תקין:</label>
+                        <input className='mx-2' type="radio" name='status' value="incomplete" id='status-incomplete' />
+                    </div>                    
+                </div>
+
+
             </div>
+
+            
+
             <button className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
             </button>
