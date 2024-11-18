@@ -426,9 +426,9 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 <div className='flex status-wrap mt-3'>
                     <label className='block text-sm min-w-20 content-center font-medium text-black'>תוצאה:</label>
                     <div className='flex items-center'>
-                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">תקין:</label>
+                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">עבר:</label>
                         <input className='mx-2' type="radio" name='status' value="complete" defaultChecked={true} id='status-complete' />
-                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">לא תקין:</label>
+                        <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">לא עבר:</label>
                         <input className='mx-2' type="radio" name='status' value="incomplete" id='status-incomplete' />
                     </div>                    
                 </div>

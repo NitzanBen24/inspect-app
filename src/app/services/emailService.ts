@@ -27,7 +27,7 @@ export const prepareEmail = (fields: FormField[]): EmailInfo | undefined => {
   });
 
   // Alpha version => Testing
-  options.reciver = 'tcelctric@gmail.com';
+  options.reciver = 'hazanreport@gmail.com';//'tcelctric@gmail.com';
   const reciverField = fields.find((item) => item.name === 'reciver');
   if (reciverField) {    
     options.reciver = 'nitzanben24@gmail.com';
