@@ -28,11 +28,14 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
               if (pdfForm) {
                 form.formFields = pdfForm.getFields().map((item) => ({
                   name: item.getName(),
-                  type: item.constructor.name.replace('PDF', ''),
+                  type: item.getName().includes('-ls') ? 'DropDown' : item.constructor.name.replace('PDF', ''),
                   require: item.isRequired(),
                 }));
               }
       
+              // Add needed fields that not in the pdf file
+              //form.formFields.push(...addFormFields())
+
               // Only push forms with fields
               if (form.formFields.length > 0) {
                 forms.push(form);
@@ -43,12 +46,20 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
           }                    
       }
 
+      
+
       return forms.length > 0 ? forms : { error: 'No forms with fields found' };      
   } catch (pdfError) {      
       console.error('Error Failed to load files:', pdfError);
       return { error: pdfError }; 
   }
 };
+
+function addFormFields(): FormField[] {
+
+  return [];
+}
+
 
 // Add user data to pdf file
 export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: unknown }> => {

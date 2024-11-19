@@ -204,6 +204,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         }
 
 
+        // Inspections result
         let statusVal = formRef.current?.querySelector<HTMLInputElement>('[name="status"]:checked')?.value;
         if (statusVal) {
             file.formFields.push({
@@ -249,7 +250,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             openModal();
             return;
         }         
-        // Send form data        
+        // Send form data
         sendForm(file);
     };   
 
@@ -267,7 +268,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     const addField = (field: FormField) => {        
         let fileNode = null;
         //Dropdown
-        if (field.name.includes('-ls')) {
+        if (field.type === 'DropDown') {
             fileNode = <select 
                             className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
                             key={field.name} 
@@ -278,18 +279,14 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                             <option value="">בחר</option>
                             {addOptionsToSelect(field.name)}
                         </select>;
-        } else {// Textfield    
-            if (field.name === 'notes') {
-                fileNode = <textarea className='p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm' name={field.name} disabled={isPending} ></textarea>
-            } else {                    
-                fileNode =  <input 
-                                className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
-                                key={field.name} 
-                                type="text" 
-                                name={field.name}                                
-                                disabled={isPending} 
-                                required />;
-            }
+        } else {// Textfield                
+            fileNode =  <input 
+                            className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
+                            key={field.name} 
+                            type="text" 
+                            name={field.name}                                
+                            disabled={isPending} 
+                            required />;                            
         }                
         return fileNode;
     }
@@ -384,21 +381,25 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         });
     }, [formBlocks, fieldsNameMap]);
 
-    const addTextFields = (fields: [{ name: string, text: string }, { name: string, text: string }]) => {
-        return fields.map((field: { name: string, text: string }) => (            
-            <div className='form-block' key={'block-' + field.name}>
-                <div className='form-item my-2 flex' key={file.name + '.' +field.name}>
-                    <label className='block text-sm min-w-20 content-center font-medium text-black'>
-                       {field.text}
-                    </label>
-                    <textarea key={ field.name + '.text'}
-                        className='form-field p-2 mt-1 h-20 w-full border border-gray-300 rounded-lg shadow-sm'
-                        name={field.name}
-                        disabled={isPending}
-                    ></textarea>
+    const addTextFields = (fields: [{ name: string, text: string }, { name: string, text: string }]) => {        
+        return fields.map((field: { name: string, text: string }) => {
+            const isSpecialField = field.name === 'comments';
+            return (       
+                <div className='form-block' key={'block-' + field.name}>
+                    <div className='form-item my-2 flex' key={file.name + '.' +field.name}>
+                        <label className='block text-sm min-w-20 content-center font-medium text-black'>
+                        {field.text}
+                        </label>
+                        <textarea key={ field.name + '.text'}                            
+                            className={`form-field p-2 mt-1 ${
+                                isSpecialField ? 'h-80' : 'h-20' // Adjust height if it's a special field
+                            } w-full border border-gray-300 rounded-lg shadow-sm`}
+                            name={field.name}
+                            disabled={isPending}
+                        ></textarea>
+                    </div>
                 </div>
-            </div>
-        ));
+            )});
     };
     
     const openModal = () => setIsModalOpen(true);
@@ -445,7 +446,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             {/* Alpha version => Testing */}
             <div ref={ sendRef } className='stagging-send flex'>
                 <label>Send to me</label>
-                <input type="checkbox" name="reciver" defaultChecked={true} id=""/>
+                <input type="checkbox" name="reciver" defaultChecked={false} id=""/>
             </div>
         </div>
 

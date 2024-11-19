@@ -1,3 +1,4 @@
+import { FormField } from "../utils/types";
 
 
 export const formMessages = {
@@ -40,6 +41,38 @@ export const fieldsNameMap: any = {
     facillity: 'מתקן',
 }
 
+export const extraFields : FormField[] = [
+    {
+        name: 'providers-ls',
+        type: 'TextField',
+        require: true,
+    },
+    {
+        name: 'new-providers',
+        type: 'TextField',
+        require: true,
+    },
+    {
+        name: 'comments',
+        type: 'TextField',
+        require: true,
+    },
+    {
+        name: 'message',
+        type: 'TextField',
+        require: true,
+    },
+    {
+        name: 'reciver',
+        type: 'TextField',
+        require: true,
+    },
+    {
+        name: 'status',
+        type: 'TextField',
+        require: true,
+    }
+]
 
 
-export const facillties = ['מחסן','לול','רפת','תעשייה','מבנה מסחרי','מבנה מגורים'];
+export const facillties = ['מחסן','לול','רפת','גג','תעשייה','מבנה מסחרי','מבנה מגורים'];
