@@ -6,13 +6,14 @@ export const formMessages = {
 }
 
 export const formFieldMap = {
+    head:['provider'],
     info:['customer', 'invoice', 'address', 'facillity-ls'],
     test: ['amper', 'kw'],
     convertor: ['cunits', 'cpower', 'convertor-ls', 'cmodel'],
     panel: ['punits', 'ppower', 'panel-ls', 'pmodel'],
     techs: ['electrician-ls', 'elicense', 'ephone', 'eemail','planner-ls', 'plicense', 'pphone', 'pemail'],
     data: ['volt-l', 'volt-n', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
-    end: ['comments, message']
+    end: ['comments', 'message']
 }
 
 export const fieldsNameMap: any = {
@@ -24,7 +25,7 @@ export const fieldsNameMap: any = {
     amper: 'גודל חיבור',
     cunits: 'מספר מהפכים',
     cmodel: 'דגם',
-    cpower: 'הספק',
+    cpower: 'הספק כללי',
     convertor: 'שם יצרן',
     punits: 'מספר מודלים',
     pmodel: 'הספק פאנל',
@@ -39,6 +40,8 @@ export const fieldsNameMap: any = {
     omega: 'לולאת תקלה',
     pm: 'שיטת הגנה',
     facillity: 'מתקן',
+    comments:'הערות',
+    message:'הודעה',
 }
 
 export const extraFields : FormField[] = [

@@ -14,8 +14,7 @@ const LoginForm = () => {
   
   const { logIn } = useUser();
 
-  const handleLoginSuccess = (data: any) => {    
-    console.log('handleLoginSuccess=>',data)
+  const handleLoginSuccess = (data: any) => {        
     logIn(data.user);
   }
   const handleLoginError = (error: any) => {

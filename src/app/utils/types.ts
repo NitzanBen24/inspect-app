@@ -73,9 +73,14 @@ export type ErrorResponse = {
   };
 
 
-  export interface EmailInfo {
+export interface EmailInfo {
     customer?: string;
     provider?: string;
     message?: string;
     reciver?: string;
-  }
+}
+
+export interface ListOption {
+    val: string;
+    id?: number;
+}

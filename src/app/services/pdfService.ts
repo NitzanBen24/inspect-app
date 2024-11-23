@@ -36,8 +36,8 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
               }
       
               // Add needed fields that not in the pdf file
-              //form.formFields.push(...addFormFields())
-
+              form.formFields.push(...addFormFields())
+              
               // Only push forms with fields
               if (form.formFields.length > 0) {
                 forms.push(form);
@@ -58,8 +58,19 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
 };
 
 function addFormFields(): FormField[] {
+  const moreFields =  ['comments', 'message', 'provider'];
+  let fields:FormField[] = [];
+  moreFields.forEach((item) => {
+    let typeElement = (item === 'provider') ? 'DropDown' : 'TextArea';
 
-  return [];
+    fields.push({
+      name: item,
+      type: typeElement,
+      require: true,
+    })
+  });
+
+  return fields;
 }
 
 

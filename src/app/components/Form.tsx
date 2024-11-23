@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FormField, FormState, Manufacture, PdfForm, Technicians } from '../utils/types';
+import { FormField, FormState, ListOption, Manufacture, PdfForm, Technicians } from '../utils/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useRef } from 'react';
@@ -9,6 +9,7 @@ import Modal from './Modal';
 import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/AppContent';
 import { useUser } from '../hooks/useUser';
 import { elementsWithValueExist } from '../utils/helper';
+import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 
 
 
@@ -55,25 +56,33 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 
     const { user } = useUser();
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);        
-    const providers = useMemo(() => { return [...new Set(technicians.map((item: Technicians) => item.employer))]; }, [technicians]);
+    const providers = [...new Set(technicians.map((item: Technicians) => item.employer))];
     const [provider, setProvider] = useState<string | boolean>(false);     
     const [message, setMessage] = useState<string>('');
     const formRef = useRef<HTMLDivElement | null>(null); 
-    const formBlocks = useMemo(() => {
-        return Object.entries(formFieldMap).map(([key, value]) => {
-            // Filter the form fields for the current block
-            return file.formFields.filter(
-                field => value.includes(field.name) && field.require
-            );
-        });
-    }, [file.formFields, provider]);
-
-    //console.log('Form.render=>', file.formFields)
+    const formBlocks = Object.entries(formFieldMap).map(([key, value]) => {
+        return file.formFields.filter(
+            field => value.includes(field.name) && field.require
+        );
+    });
 
     const sendRef = useRef<HTMLInputElement | null>(null);        
+    const dropdownRefs = useRef<SearchableDropdownHandle[]>([]);// Array of DropDown lists refs
 
+    //Ensures the refs are added to the dropdownRefs array when the component is mounted.
+    const registerRef = (ref: SearchableDropdownHandle | null) => {
+        if (ref) {
+          dropdownRefs.current.push(ref);
+        }
+    };
+
+    // Clear all DropDwons
+    const handleClearDropdowns = () => {
+        dropdownRefs.current.forEach((ref) => ref.clear());
+    };
+  
     const handleSendSuccess = (data: any) => {                         
-        setMessage(data.success);
+        setMessage(data.success);         
         cleanForm();
         openModal();
     }
@@ -87,31 +96,27 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         close();
     }
 
-    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target; 
+    const handleListChange = useCallback((value: string, name: string, id?: number) => {   
 
-        if (name === 'provider') setProvider(value);
-        if (name === 'electrician-ls' || name === 'planner-ls') setTechniciansDetails(name);
-        
-    }, [setProvider]);
+        if (name === 'provider') {
+            setProvider(value)
+        }        
+    
+        if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
+      },[setProvider]);
 
-    const setTechniciansDetails = (type: string) => {        
-        if (!formRef.current) return false;        
-        
-        const selectElement = formRef.current.querySelector<HTMLSelectElement>("[name="+type+"]");        
-        if (selectElement) {
-            //** get option id to find it in thechnicians, name is not enough */
-            const selectedOption = selectElement.options[selectElement.selectedIndex];
-            const technician = technicians.find((item) => item.id.toString() === selectedOption.id)            
-            if (technician) {
-                let typeChar = type[0];   
-                let techInfo = [{[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];
-                setField(techInfo);
-            }                                 
-        }
+    const setTechniciansDetails = (type: string, val: string, id: number ) => {        
+        if (!formRef.current) return false; 
+
+        const technician = technicians.find((item) => item.id === id)
+        if (technician) {
+            let typeChar = type[0];   
+            let techInfo = [{[type]: technician.name || ''}, {[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];
+            setFields(techInfo);
+        }                                 
     }
 
-    const setDate = () => setField([{['date']: formatHebrewDate()}]);
+    const setDate = () => setFields([{['date']: formatHebrewDate()}]);
 
     const cleanForm = () => {        
         if (!formRef.current) {
@@ -122,24 +127,19 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         formRef.current.querySelectorAll<HTMLElement>('.form-field').forEach((item) => {            
             if (item instanceof HTMLInputElement || item instanceof HTMLTextAreaElement) {                
                 item.value = ''; // Clear the value for input and textarea
-            } else if (item instanceof HTMLSelectElement) {                
-                item.selectedIndex = 0; // Reset the selected option to the first option for select
-            }
+            } 
+            
         });
-
-        const providerSelect = formRef.current.querySelector<HTMLSelectElement>('[name="provider"]');
-        if (providerSelect) {
-            providerSelect.selectedIndex = 0 ;
-        }
-
-        // Remove fields to prevent duplication
-        const fieldsToRemove = ['comments', 'message', 'provider', 'reciver','status'];
+       
+        const fieldsToRemove = ['reciver','status'];
         file.formFields = file.formFields.filter((item) => !fieldsToRemove.includes(item.name));
 
 
         file.formFields.forEach((item) => {            
             delete item.value;            
-        });                
+        });        
+        
+        handleClearDropdowns();// Clear all DropDowns
     }
 
     const fillFormFields = () => {
@@ -154,35 +154,11 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     if (currFiled) {
                         currFiled.value = fieldValue;
                     }                    
-
-                    if (fieldName === 'comments' || fieldName === 'message') {                        
-                        file.formFields.push({
-                            name: fieldName,
-                            type: 'TextArea',
-                            require:true, 
-                            value: fieldValue,
-                        });
-                    }
                 }                 
             });
-        }         
-    }
-
-    const addFormFields = () => {
+        }
 
         let newFields = [];
-
-        // Add provider
-        let providerNode = formRef.current?.querySelector<HTMLInputElement>('[name="provider"]');
-        let newProviderNode = formRef.current?.querySelector<HTMLInputElement>('[name="new-provider"]');
-        let providerVal = newProviderNode?.value || providerNode?.value;
-
-        file.formFields.push({
-            name: 'provider',
-            type: 'TextArea',
-            require: true, 
-            value: providerVal,
-        });
 
         // If mcurrent & rcurrent are filled add check and scurrent to formFields
         if (elementsWithValueExist(file.formFields,['mcurrent', 'rcurrent'])) {
@@ -214,8 +190,8 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 value:statusVal,
             })
         }
-
-        setField(newFields);
+        
+        setFields(newFields);
     }
 
     const prepareForm = () => { 
@@ -231,12 +207,10 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         }
             
         fillFormFields();
-        
-        addFormFields();
 
         const ppower = calcPower(formRef.current);
         if (ppower) {
-            setField([{['ppower']: ppower.toString()}]);
+            setFields([{['ppower']: ppower.toString()}]);
         }
 
         setDate();
@@ -251,162 +225,99 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             return;
         }         
         // Send form data
+        console.log('formFields=>send',file.formFields)
         sendForm(file);
     };   
 
-    const setField = useCallback((fields: FormState[]) => {
-        fields.forEach((item) => {
-            Object.entries(item).forEach(([key, value]) => {                
-                let field = file.formFields.find((item) => item.name === key)        
-                if (field) {        
-                    field.value = value;
-                }
-              });            
-        });    
+    const setFields = useCallback((fields: FormState[]) => {
+        fields.forEach(item => {
+            const [key, value] = Object.entries(item)[0];
+            const field = file.formFields.find(f => f.name === key);
+            if (field) field.value = value;
+        });
     }, [file.formFields]);
+    
 
-    const addField = (field: FormField) => {        
-        let fileNode = null;
-        //Dropdown
-        if (field.type === 'DropDown') {
-            fileNode = <select 
-                            className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
-                            key={field.name} 
-                            name={field.name} 
-                            onChange={handleChange} 
-                            disabled={isPending} 
-                            required>     
-                            <option value="">בחר</option>
-                            {addOptionsToSelect(field.name)}
-                        </select>;
-        } else {// Textfield                
-            fileNode =  <input 
-                            className='form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
-                            key={field.name} 
-                            type="text" 
-                            name={field.name}                                
-                            disabled={isPending} 
-                            required />;                            
-        }                
-        return fileNode;
+    function getListOptions(name: string): string[] | ListOption[] {
+        const nameToArrayMap: Record<string, string[] | ListOption[]> = {
+            provider: providers,
+            electrician: technicians.filter((item) => item.profession === 'electrician' && item.employer === provider).map((item) => {
+                return {
+                    val: item.name,
+                    id: item.id
+                }
+            }),
+            planner: technicians.filter((item) => item.profession === 'planner' && item.employer === provider).map((item) => {
+                return {
+                    val: item.name,
+                    id: item.id
+                }
+            }),
+            convertor: manufactures.filter((item) => item.type === 'convertor' ||  item.type === 'both').map((item) => {
+                return item.name;
+            }),
+            panel: manufactures.filter((item) => item.type === 'panel' ||  item.type === 'both').map((item) => {
+                return item.name;
+            }),
+            facillity: facillties,
+        };
+      
+        // Return the array for the given name or an empty array if the name is not found
+        return nameToArrayMap[name] || [];
     }
+      
 
-    /**
-         * Refactor!!!!!!
-         */ 
-    const addOptionsToSelect = (fieldName: string) => {
-            
-        switch (fieldName) {            
-            case 'electrician-ls':
-                return technicians.filter((item) => item.profession === 'electrician' && item.employer === provider).map((item) => {
-                    return <option id={item.id.toString()} key={item.name+'.opt'} value={ item.name }>{ item.name }</option>
-                });
-            case 'planner-ls':
-                return technicians.filter((item) => item.profession === 'planner' && item.employer === provider).map((item) => {
-                    return <option id={item.id.toString()} key={item.name+'.opt'} value={ item.name }>{ item.name }</option>
-                });
-            case 'convertor-ls':
-                return manufactures.filter((item) => item.type === 'convertor' ||  item.type === 'both').map((item) => {
-                    return <option key={item.name+'.opt'} value={ item.name }>{ item.name }</option>
-                });
-            case 'panel-ls':
-                return manufactures.filter((item) => item.type === 'panel' ||  item.type === 'both').map((item) => {
-                    return <option key={item.name+'.opt'} value={ item.name }>{ item.name }</option>
-                });    
-            case 'facillity-ls':
-                return facillties.map((item) => {
-                    return <option key={item+'.opt'} value={ item }>{ item }</option>
-                });
-        }
+    const addField = (field: FormField) => {       
+        
+        const listOptions = getListOptions(field.name.replace("-ls", ""));        
+        // Determine the field node
+        const fieldNode = field.type === 'DropDown' ? (            
+            <SearchableDropdown ref={registerRef} options={listOptions} fieldName={field.name} text="חפש" onValueChange={handleListChange} />
+        ) : field.type === 'TextArea' ? (
+            <textarea className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" key={field.name} name={field.name} rows={3} disabled={isPending} required />
+        ) : (
+            <input className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" type="text" key={field.name} name={field.name} disabled={isPending} required />
+        );
 
-        return false;
-    }
-
-    const addProviderFields = () => {
-        return (<>
-            <div className='form-item my-2 flex'> 
-                <label className='block text-sm min-w-20 content-center font-medium text-black'>ספק עבודה:</label>
-                <select 
-                    className='mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
-                    key={'providers.select'} 
-                    name={'provider'} 
-                    onChange={handleChange} 
-                    disabled={isPending} 
-                    required>
-                    <option key={ 'prov.val' } value={ 'בחר ספק' }>{ 'בחר ספק' }</option>     
-                    {providers.map((item) => (
-                        <option key={ item + '.val' } value={ item }>{ item }</option>
-                    ))}
-                </select>                
+        // Return the complete JSX block
+        return (
+            <div key={`field-${field.name}`} className="form-item my-2 flex">
+                <label className="block content-center text-sm min-w-20 font-medium text-black">
+                    {fieldsNameMap[field.name.replace("-ls", '')]}:
+                </label>
+                {fieldNode}
+                {field.name === 'omega' && (
+                    <>
+                        <label className="block content-center mr-2 text-sm min-w-10 py-auto font-medium text-black">
+                            תקין:
+                        </label>
+                        <input type="checkbox" name="ocheck" defaultChecked={true} />
+                    </>
+                )}
             </div>
-
-            <div className='form-item my-2 flex'> 
-                <label className='block text-sm min-w-20 content-center font-medium text-black'>הוסף ספק:</label>
-                <input 
-                    className='mt-1 w-full border border-gray-300 rounded-lg shadow-sm' 
-                    key={'provider.input'} 
-                    type="text" 
-                    name={'new-provider'}                                
-                    disabled={isPending} 
-                    required />
-            </div>
-
-        </>)
-    }
+        );
+    };
 
     // Memoize the rendering of blocks
-    const renderBlocks = useMemo(() => {
+    const renderBlocks = useMemo(() => {        
         return formBlocks.map((block, index) => {
             // If no fields are found for this block, return null            
-            if (block.length === 0) return null;
-
+            if (block.length === 0) return null;            
             return (
                 <div key={`block-${index}`} className='form-block py-2 border-b-2 border-slate-800'>
                     {block.map(field => (
-                        <div key={`field-${field.name}`} className='form-item my-2 flex'>                             
-                            <label className='block content-center text-sm min-w-20 font-medium text-black'>
-                                {fieldsNameMap[field.name.replace('-ls', '')]}:
-                            </label>
-                            {addField(field)}
-                            {field.name === 'omega' && (
-                                <>
-                                <label className='block content-center mr-2 text-sm min-w-10 py-auto font-medium text-black'>תקין:</label>
-                                <input type="checkbox" name='ocheck' defaultChecked={true}/>
-                                </>
-                            )}
-                        </div>
-                    ))}
+                        addField(field)
+                    ))}                    
                 </div>
             );
         });
-    }, [formBlocks, fieldsNameMap]);
-
-    const addTextFields = (fields: [{ name: string, text: string }, { name: string, text: string }]) => {        
-        return fields.map((field: { name: string, text: string }) => {
-            const isSpecialField = field.name === 'comments';
-            return (       
-                <div className='form-block' key={'block-' + field.name}>
-                    <div className='form-item my-2 flex' key={file.name + '.' +field.name}>
-                        <label className='block text-sm min-w-20 content-center font-medium text-black'>
-                        {field.text}
-                        </label>
-                        <textarea key={ field.name + '.text'}                            
-                            className={`form-field p-2 mt-1 ${
-                                isSpecialField ? 'h-80' : 'h-20' // Adjust height if it's a special field
-                            } w-full border border-gray-300 rounded-lg shadow-sm`}
-                            name={field.name}
-                            disabled={isPending}
-                        ></textarea>
-                    </div>
-                </div>
-            )});
-    };
+    }, [formBlocks, fieldsNameMap, file.formFields]);
     
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { 
         setIsModalOpen(false);
     }
-
+    
     return (
         <>        
         
@@ -417,13 +328,9 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 </div>
                 <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס הצהרת בודק' }</h2>
             </div>            
-            <div ref={ formRef } className='form-body my-2'>   
-                <div className='form-block'> 
-                    { addProviderFields() }
-                </div>
-                { renderBlocks }
-                { addTextFields([{name: 'comments', text: 'הערות:'}, { name: 'message', text: 'הודעה'}]) }  
-
+            <div ref={ formRef } className='form-body my-2'>                   
+                { renderBlocks }  
+                
                 <div className='flex status-wrap mt-3'>
                     <label className='block text-sm min-w-20 content-center font-medium text-black'>תוצאה:</label>
                     <div className='flex items-center'>
@@ -434,10 +341,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                     </div>                    
                 </div>
 
-
             </div>
-
-            
 
             <button className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
@@ -464,4 +368,3 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 };
 
 export default Form;
-
