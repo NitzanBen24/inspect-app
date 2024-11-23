@@ -348,8 +348,8 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             </button>
 
             {/* Alpha version => Testing */}
-            <div ref={ sendRef } className='stagging-send flex'>
-                <label>Send to me</label>
+            <div ref={ sendRef } className='stagging-send flex mt-5'>
+                <label className='mr-2'>Send to me</label>
                 <input type="checkbox" name="reciver" defaultChecked={false} id=""/>
             </div>
         </div>
