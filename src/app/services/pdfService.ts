@@ -27,12 +27,17 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
               const pdfDoc = await PDFLibDocument.load(existingPdfBytes);                                          
               const pdfForm = pdfDoc.getForm();  
               
-              if (pdfForm) {
-                form.formFields = pdfForm.getFields().map((item) => ({
-                  name: item.getName(),
-                  type: item.getName().includes('-ls') ? 'DropDown' : item.constructor.name.replace('PDF', ''),
-                  require: item.isRequired(),
-                }));
+              if (pdfForm) {                 
+                form.formFields = pdfForm.getFields().map((field) => {                   
+                  const fieldName = field.getName();
+                  const isDropDown = fieldName.endsWith('-ls');
+
+                  return ({
+                    name: isDropDown ? fieldName.replace('-ls','') : fieldName,
+                    type: isDropDown ? 'DropDown' : 'TextField',
+                    require: field.isRequired(),
+                  })
+                });
               }
       
               // Add needed fields that not in the pdf file
@@ -58,19 +63,13 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
 };
 
 function addFormFields(): FormField[] {
-  const moreFields =  ['comments', 'message', 'provider'];
-  let fields:FormField[] = [];
-  moreFields.forEach((item) => {
-    let typeElement = (item === 'provider') ? 'DropDown' : 'TextArea';
-
-    fields.push({
-      name: item,
-      type: typeElement,
-      require: true,
-    })
-  });
-
-  return fields;
+  const moreFields = ['comments', 'message', 'provider'];
+  
+  return moreFields.map((item) => ({
+    name: item,
+    type: item === 'provider' ? 'DropDown' : 'TextArea',
+    require: true,
+  }));
 }
 
 
@@ -127,8 +126,6 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
 
     addComments(pdfDoc, file.formFields, hebrewFont)
    
-    // Flatten the form fields (make them uneditable)
-    form.flatten();
     // Save the edited PDF
     const pdfBytes = await pdfDoc.save();
     return pdfBytes;
