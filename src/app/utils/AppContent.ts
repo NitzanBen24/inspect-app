@@ -7,12 +7,12 @@ export const formMessages = {
 
 export const formFieldMap = {
     head:['provider'],
-    info:['customer', 'invoice', 'address', 'facillity-ls'],
+    info:['customer', 'invoice', 'address', 'facillity'],
     test: ['amper', 'kw'],
-    convertor: ['cunits', 'cpower', 'convertor-ls', 'cmodel'],
-    panel: ['punits', 'ppower', 'panel-ls', 'pmodel'],
-    techs: ['electrician-ls', 'elicense', 'ephone', 'eemail','planner-ls', 'plicense', 'pphone', 'pemail'],
-    data: ['volt-l', 'volt-n', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
+    convertor: ['cunits', 'cpower', 'convertor', 'cmodel'],
+    panel: ['punits', 'ppower', 'panel', 'pmodel'],
+    techs: ['electrician', 'elicense', 'ephone', 'eemail','planner', 'plicense', 'pphone', 'pemail'],
+    data: ['voltl', 'voltn', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
     end: ['comments', 'message']
 }
 
@@ -32,8 +32,8 @@ export const fieldsNameMap: any = {
     panel: 'שם יצרן',
     electrician: 'חשמלאי',
     planner: 'מתכנן',
-    'volt-l': 'מתח שלוב',
-    'volt-n': 'מתח פאזי',
+    voltl: 'מתח שלוב',
+    voltn: 'מתח פאזי',
     rcurrent: 'פחת',
     mcurrent: 'זרם זליגה',
     check: 'תקין',
