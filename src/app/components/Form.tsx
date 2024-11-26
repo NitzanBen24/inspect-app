@@ -75,7 +75,9 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
           dropdownRefs.current.push(ref);
         }
     };
-
+    
+    //console.log('Form.render=>',file.formFields)
+    
     // Clear all DropDwons
     const handleClearDropdowns = () => {
         dropdownRefs.current.forEach((ref) => ref.clear());
@@ -92,6 +94,17 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     };
     const { mutate:sendForm, isPending } = usePost('pdf-forms',handleSendSuccess, handleSendError);
 
+    // const handleSaveSuccess = (data: any) => {
+    //     //console.log('handleSaveSuccess=>', data)
+    //     setMessage(data.success); 
+    // }
+    // const handleSaveError = (error: unknown) => {
+    //     //console.log('handleSaveError=>error', error)
+    //     setMessage("Error in saving data!");
+    //     openModal();        
+    // }
+    // const { mutate: saveForm } = usePost('records',handleSaveSuccess,handleSaveError)
+
     const goBack = () => {
         close();
     }
@@ -102,7 +115,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             setProvider(value)
         }        
     
-        if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
+        if (id && (name === 'electrician' || name === 'planner')) setTechniciansDetails(name, value, id);
       },[setProvider]);
 
     const setTechniciansDetails = (type: string, val: string, id: number ) => {        
@@ -218,16 +231,38 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         return true;
     }
 
-    const handleClick = () => {            
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
+        
+        //const btnId = event.currentTarget.id;
+        
         if (!prepareForm()) {
             //** Mark input in red */
             openModal();
             return;
         }         
-        // Send form data
-        console.log('formFields=>send',file.formFields)
-        sendForm(file);
-    };   
+
+        sendForm(file);    
+
+        // if (btnId === 'BtnSave') {
+        //     const payload: FormState = file.formFields.filter((field) => field.require === true).reduce((obj:any, field) => {
+        //         obj[field.name] = field.value || ''; 
+        //         return obj;
+        //     }, {});            
+
+        //     payload.name = file.name;
+            
+        //     saveForm(file.formFields);
+
+        // }
+
+        // if (btnId === 'BtnSend') {
+        //     // Send form data            
+        //     sendForm(file);    
+        // }
+        
+    };
+
+    //const send
 
     const setFields = useCallback((fields: FormState[]) => {
         fields.forEach(item => {
@@ -239,6 +274,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     
 
     function getListOptions(name: string): string[] | ListOption[] {
+        
         const nameToArrayMap: Record<string, string[] | ListOption[]> = {
             provider: providers,
             electrician: technicians.filter((item) => item.profession === 'electrician' && item.employer === provider).map((item) => {
@@ -343,9 +379,12 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 
             </div>
 
-            <button className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
+            <button id='BtnSend' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
             </button>
+            {/* <button id='BtnSave' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
+                שמור
+            </button> */}
 
             {/* Alpha version => Testing */}
             <div ref={ sendRef } className='stagging-send flex mt-5'>
