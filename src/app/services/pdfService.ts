@@ -33,7 +33,7 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
                   const isDropDown = fieldName.endsWith('-ls');
 
                   return ({
-                    name: isDropDown ? fieldName.replace('-ls','') : fieldName,
+                    name: fieldName,//isDropDown ? fieldName.replace('-ls','') :
                     type: isDropDown ? 'DropDown' : 'TextField',
                     require: field.isRequired(),
                   })

@@ -7,11 +7,11 @@ export const formMessages = {
 
 export const formFieldMap = {
     head:['provider'],
-    info:['customer', 'invoice', 'address', 'facillity'],
+    info:['customer', 'invoice', 'address', 'facillity-ls'],
     test: ['amper', 'kw'],
-    convertor: ['cunits', 'cpower', 'convertor', 'cmodel'],
-    panel: ['punits', 'ppower', 'panel', 'pmodel'],
-    techs: ['electrician', 'elicense', 'ephone', 'eemail','planner', 'plicense', 'pphone', 'pemail'],
+    convertor: ['cunits', 'cpower', 'convertor-ls', 'cmodel'],
+    panel: ['punits', 'ppower', 'panel-ls', 'pmodel'],
+    techs: ['electrician-ls', 'elicense', 'ephone', 'eemail','planner-ls', 'plicense', 'pphone', 'pemail'],
     data: ['voltl', 'voltn', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
     end: ['comments', 'message']
 }

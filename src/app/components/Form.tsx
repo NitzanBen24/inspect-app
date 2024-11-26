@@ -115,7 +115,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             setProvider(value)
         }        
     
-        if (id && (name === 'electrician' || name === 'planner')) setTechniciansDetails(name, value, id);
+        if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
       },[setProvider]);
 
     const setTechniciansDetails = (type: string, val: string, id: number ) => {        
@@ -124,7 +124,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         const technician = technicians.find((item) => item.id === id)
         if (technician) {
             let typeChar = type[0];   
-            let techInfo = [{[type]: technician.name || ''}, {[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];
+            let techInfo = [{[type]: technician.name || ''}, {[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];            
             setFields(techInfo);
         }                                 
     }
@@ -240,7 +240,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             openModal();
             return;
         }         
-
+                
         sendForm(file);    
 
         // if (btnId === 'BtnSave') {
@@ -269,7 +269,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             const [key, value] = Object.entries(item)[0];
             const field = file.formFields.find(f => f.name === key);
             if (field) field.value = value;
-        });
+        });        
     }, [file.formFields]);
     
 
