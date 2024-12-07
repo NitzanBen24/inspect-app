@@ -1,3 +1,5 @@
+import { UseQueryOptions } from "@tanstack/react-query";
+
 export interface FormField {
     name: string;
     type: string;
@@ -8,10 +10,23 @@ export interface FormField {
 export interface PdfForm {
     name: string;
     formFields: FormField[];
+    status: string;
+    id?: string;
+    userId?: string;
+    userName?: string;
+    created?: any;
 }
 
 export type FormState = {
     [key: string]: string; // Dynamic key-value pairs for each form input
+}
+
+export type FieldsObject = {
+    [key: string]: string; // Dynamic key-value pairs for each form input
+}
+
+export interface FormListObject {
+    [key: string]: PdfForm[]; // Assuming key is the record status (saved, pending)
 }
 
 export interface Manufacture {
@@ -41,6 +56,7 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    role: string;
     created_at?: string;
     isLoggedIn?: boolean; 
 }
@@ -84,3 +100,9 @@ export interface ListOption {
     val: string;
     id?: number;
 }
+
+export type QueryConfig<T> = {
+    key: string;
+    path: string;
+    options?: Omit<UseQueryOptions<T, Error, T>, "queryKey" | "queryFn">;
+};

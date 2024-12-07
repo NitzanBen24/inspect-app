@@ -7,15 +7,18 @@ import { useFetch, usePost } from './hooks/useQuery';
 import { AuthFail, AuthResponse } from './utils/types';
 import { isAuthResponse } from './utils/typeGuards';
 import Image from 'next/image';
+import { TechniciansProvider } from './contexts/TechniciansContext';
+import { ManufactureProvider } from './contexts/ManufacturesContext';
+
 
 
 const Main = () => {
     
-    const { user, logIn, logOut } = useUser();    
+    const { user, logIn, logOut } = useUser();
     const  { data: userAuth, isLoading } = useFetch<AuthResponse | AuthFail>('users', 'auth');
 
     const userLogoutSuccess = (data: any) => logOut();
-    const { mutate: userAuthMutation } = usePost('auth', userLogoutSuccess);
+    const { mutate: userAuthMutation } = usePost('auth','users', userLogoutSuccess);
     
     useEffect(() => {    
         if (userAuth && isAuthResponse(userAuth)) {            
@@ -50,7 +53,15 @@ const Main = () => {
                 </div>
             </div>
                     
-            {user.isLoggedIn ? <HomePage /> : <LoginForm />}            
+            {user.isLoggedIn ? 
+            <ManufactureProvider>
+            <TechniciansProvider>
+                <HomePage />
+            </TechniciansProvider>
+            </ManufactureProvider>
+            
+             : 
+            <LoginForm />}            
         </>
     )
 }

@@ -1,40 +1,67 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { PdfForm } from '../utils/types';
+import { FieldsObject, PdfForm } from '../utils/types';
+import { useTechnician } from '../hooks/useTechnician';
 
 interface Props {
-  list: PdfForm[];
-  open: (form:PdfForm) => void
+  forms: PdfForm[];
+  addFilter: boolean;
+  title: string;
+  openForm: (form:PdfForm) => void;
 }
 
-const FormsList = ({ list, open }: Props) => {
+const setHebrewTitle = (title: string): string => {
+  const options: Record<string, string> = 
+    {
+      saved: 'שמורים',
+      pending: 'מחכים לחיוב',
+      sent: 'נשלחו לחיוב'
+    }
+  
 
-  if (!list.length) {
-    return <><div>שגיאה! חסר תוכן</div></>
-  }
+  return options[title] || 'בחר טופס';
+}
+
+const FormsList = ({ forms, openForm, title, addFilter }: Props) => {  
 
   const handleClick = (form: PdfForm) => {
-    open(form);
+    openForm(form);
   }
 
   return (
       <>
-      <div className='p-2'>
-          <h2 className='text-2xl text-right'>:בחר טופס</h2>
-          {/* <p className='text-sm text-right'>:בחר טופס</p> */}
-          <ul className='list-group text-right'>
-            {list.map((form) => (
+      {forms.length > 0 && <div className='form-list p-2 mb-3'>
+          <h2 className='text-lg'>{setHebrewTitle(title)}:</h2>          
+          <ul className='p-0'>
+            {addFilter && <li
+            className='form-list-item grid grid-cols-5 gap-4 mb-2'
+            key={setHebrewTitle(title)}
+            >
+              <span>שם טופס:</span>
+              <span>לקוח:</span>
+              <span>ספק:</span>
+              <span>בודק:</span>
+              <span>תאריך:</span>
+            </li>}
+            {forms.map((form) => (
               <li
-              className='list-group-item'
-              key={form.name}
+              className='form-list-item grid grid-cols-5 gap-4 border-gray-400 border mb-1 rounded-md'
+              key={form.name+form?.id}
               onClick={() => handleClick(form)}
-              >
-                    {form.name}
+              >                
+                  <span>{form.name}</span>
+                  <span>{form.formFields.find((item) => item.name === 'customer')?.value || ''}</span>
+                  <span>{form.formFields.find((item) => item.name === 'provider')?.value || ''}</span>
+                  <span>{form?.userName}</span>
+                  {/* <span>{form?.created.slice(0, 10) || 'No Date'}</span> */}
+                  <span>{typeof form?.created === 'string' ? form.created.slice(0, 10) : ''}</span> {/* Safe check */}
+  
+                  
               </li>
             ))}
           </ul>
-      </div>
+      </div>}
       </>
   )
 }

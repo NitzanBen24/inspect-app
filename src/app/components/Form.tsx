@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FormField, FormState, ListOption, Manufacture, PdfForm, Technicians } from '../utils/types';
+import { FormField, FieldsObject, ListOption, Manufacture, PdfForm, Technicians } from '../utils/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useRef } from 'react';
@@ -10,15 +10,8 @@ import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/
 import { useUser } from '../hooks/useUser';
 import { elementsWithValueExist } from '../utils/helper';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
-
-
-
-interface Props {
-  file: PdfForm,
-  manufactures: Manufacture[],
-  technicians: Technicians[],
-  close: () => void,
-}
+import { useTechnician } from '../hooks/useTechnician';
+import { useManufacture } from '../hooks/useManufactures';
 
 // Utility function to get today's date in the format yyyy month (Hebrew) dd
 const formatHebrewDate = () => {
@@ -51,17 +44,24 @@ const calcPower = (formNode:HTMLDivElement | null): number | false => {
     
 }
 
+interface Props {
+    form: PdfForm,
+    close: () => void,
+}
 
-const Form = ({ file, manufactures, technicians , close }: Props) => {
+const Form = ({ form, close }: Props) => {
 
     const { user } = useUser();
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);        
+    const { technicians } = useTechnician();
+    const { manufactures } = useManufacture();
+    //const [ formStatus, setFormStatus ] = useState<string>(form.status);
+    const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);        
     const providers = [...new Set(technicians.map((item: Technicians) => item.employer))];
-    const [provider, setProvider] = useState<string | boolean>(false);     
-    const [message, setMessage] = useState<string>('');
+    const [ provider, setProvider ] = useState<string | boolean>(false);     
+    const [ message, setMessage ] = useState<string>('');
     const formRef = useRef<HTMLDivElement | null>(null); 
     const formBlocks = Object.entries(formFieldMap).map(([key, value]) => {
-        return file.formFields.filter(
+        return form.formFields.filter(
             field => value.includes(field.name) && field.require
         );
     });
@@ -74,36 +74,44 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         if (ref) {
           dropdownRefs.current.push(ref);
         }
-    };
+    };    
+
+    useEffect(() => {              
+        let isProvider = provider;
+        formRef.current?.querySelectorAll<HTMLElement>('.form-field').forEach((item) => {                 
+            if (item instanceof HTMLInputElement || item instanceof HTMLTextAreaElement) {                               
+                const inputField = form.formFields.find((field) => field.name === item.name)                  
+                item.value =  inputField?.value || ''; // Clear the value for input and textarea
+                if (item.name === 'provider' && item.value) {
+                    isProvider = item.value;
+                }
+            }   
+        });        
+        if (isProvider) setProvider(isProvider);
+    }, [form.formFields])
     
-    //console.log('Form.render=>',file.formFields)
-    
-    // Clear all DropDwons
-    const handleClearDropdowns = () => {
-        dropdownRefs.current.forEach((ref) => ref.clear());
-    };
-  
-    const handleSendSuccess = (data: any) => {                         
-        setMessage(data.success);         
+    const handleSaveSuccess = (data: any) => {
+        
+        /** leave this optional, ask Yaron and Sofi 
+        if (form.status === 'saved') {
+             goBack();
+         } 
+        */
+
         cleanForm();
+        setMessage(data.message); 
         openModal();
     }
-    const handleSendError = (error: unknown) => {        
-        setMessage("Error in sending data!");
+    const handleSaveError = (error: unknown) => {        
+        setMessage("Error in saving data!");
         openModal();        
-    };
-    const { mutate:sendForm, isPending } = usePost('pdf-forms',handleSendSuccess, handleSendError);
-
-    // const handleSaveSuccess = (data: any) => {
-    //     //console.log('handleSaveSuccess=>', data)
-    //     setMessage(data.success); 
-    // }
-    // const handleSaveError = (error: unknown) => {
-    //     //console.log('handleSaveError=>error', error)
-    //     setMessage("Error in saving data!");
-    //     openModal();        
-    // }
-    // const { mutate: saveForm } = usePost('records',handleSaveSuccess,handleSaveError)
+    }    
+    const { mutate: formSubmit, isPending } = usePost(
+        'forms',
+        'data',
+        handleSaveSuccess,
+        handleSaveError
+    );
 
     const goBack = () => {
         close();
@@ -116,7 +124,8 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         }        
     
         if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
-      },[setProvider]);
+
+    },[setProvider]);
 
     const setTechniciansDetails = (type: string, val: string, id: number ) => {        
         if (!formRef.current) return false; 
@@ -130,8 +139,13 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     }
 
     const setDate = () => setFields([{['date']: formatHebrewDate()}]);
-
-    const cleanForm = () => {        
+    
+     // Clear all DropDwons
+    const handleClearDropdowns = () => {
+        dropdownRefs.current.forEach((ref) => ref.clear());
+    };
+  
+    const cleanForm = () => {              
         if (!formRef.current) {
             goBack();
             return;
@@ -145,10 +159,10 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         });
        
         const fieldsToRemove = ['reciver','status'];
-        file.formFields = file.formFields.filter((item) => !fieldsToRemove.includes(item.name));
+        form.formFields = form.formFields.filter((item) => !fieldsToRemove.includes(item.name));
 
 
-        file.formFields.forEach((item) => {            
+        form.formFields.forEach((item) => {            
             delete item.value;            
         });        
         
@@ -163,7 +177,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 const fieldName = inputField.getAttribute('name'); // Get the name attribute                
                 const fieldValue = inputField.value;
                 if (fieldName) {                                        
-                    const currFiled = file.formFields.find((item) => item.name === fieldName);
+                    const currFiled = form.formFields.find((item) => item.name === fieldName);
                     if (currFiled) {
                         currFiled.value = fieldValue;
                     }                    
@@ -174,12 +188,12 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         let newFields = [];
 
         // If mcurrent & rcurrent are filled add check and scurrent to formFields
-        if (elementsWithValueExist(file.formFields,['mcurrent', 'rcurrent'])) {
+        if (elementsWithValueExist(form.formFields,['mcurrent', 'rcurrent'])) {
             newFields.push({['check']: '*'}, {['scurrent']: '300'});             
         }
 
         //checkVoltage
-        if (!elementsWithValueExist(file.formFields,['volt-n', 'volt-l'])) {
+        if (!elementsWithValueExist(form.formFields,['volt-n', 'volt-l'])) {
             newFields.push({['irrelavent']: '*'}, {['zero']: ''}, {['propper']: ''});            
         } else {
             newFields.push({['propper']: '*'}, {['zero']: '0'});            
@@ -196,7 +210,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         // Inspections result
         let statusVal = formRef.current?.querySelector<HTMLInputElement>('[name="status"]:checked')?.value;
         if (statusVal) {
-            file.formFields.push({
+            form.formFields.push({
                 name: 'status',
                 type: 'TextArea',
                 require:false,
@@ -207,19 +221,17 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
         setFields(newFields);
     }
 
-    const prepareForm = () => { 
+    const prepareToSend = () => { 
 
         // Alpha version => Testing        
         const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]');    
         if (sendToMe && sendToMe.checked) {            
-            file.formFields.push({
+            form.formFields.push({
                 name: 'reciver',
                 type: 'TextArea',
                 require:false,                 
             });
         }
-            
-        fillFormFields();
 
         const ppower = calcPower(formRef.current);
         if (ppower) {
@@ -233,44 +245,39 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
         
-        //const btnId = event.currentTarget.id;
+        const btnId = event.currentTarget.id;
+        let sendMail = false;
         
-        if (!prepareForm()) {
-            //** Mark input in red */
-            openModal();
-            return;
-        }         
-                
-        sendForm(file);    
+        fillFormFields();
 
-        // if (btnId === 'BtnSave') {
-        //     const payload: FormState = file.formFields.filter((field) => field.require === true).reduce((obj:any, field) => {
-        //         obj[field.name] = field.value || ''; 
-        //         return obj;
-        //     }, {});            
+        if (btnId === 'BtnSave') {       
+            form.status = 'saved';        
+        }
 
-        //     payload.name = file.name;
+        if (btnId === 'BtnSend') {            
+            /** for now prepareToSenf allways return true */
+            if (!prepareToSend()) {
+                //** Mark input in red */
+                openModal();
+                return;
+            }
             
-        //     saveForm(file.formFields);
-
-        // }
-
-        // if (btnId === 'BtnSend') {
-        //     // Send form data            
-        //     sendForm(file);    
-        // }
+            form.status = (user.role === 'admin') ? 'sent' : 'pending';            
+            sendMail = true;  
+        }
+        
+        formSubmit({userId:user.id, userName: user.name, form:form, sendMail});
         
     };
+    
 
-    //const send
-
-    const setFields = useCallback((fields: FormState[]) => {
+    const setFields = useCallback((fields: FieldsObject[]) => {
         fields.forEach(item => {
             const [key, value] = Object.entries(item)[0];
-            const field = file.formFields.find(f => f.name === key);
+            const field = form.formFields.find(f => f.name === key);
             if (field) field.value = value;
         });        
-    }, [file.formFields]);
+    }, [form.formFields]);
     
 
     function getListOptions(name: string): string[] | ListOption[] {
@@ -300,15 +307,14 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
       
         // Return the array for the given name or an empty array if the name is not found
         return nameToArrayMap[name] || [];
-    }
-      
+    } 
 
     const addField = (field: FormField) => {       
         
         const listOptions = getListOptions(field.name.replace("-ls", ""));        
-        // Determine the field node
+        // Determine the field node        
         const fieldNode = field.type === 'DropDown' ? (            
-            <SearchableDropdown ref={registerRef} options={listOptions} fieldName={field.name} text="חפש" onValueChange={handleListChange} />
+            <SearchableDropdown ref={registerRef} options={listOptions} fieldName={field.name}  text="חפש" value={field.value || ''} onValueChange={handleListChange} />
         ) : field.type === 'TextArea' ? (
             <textarea className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" key={field.name} name={field.name} rows={3} disabled={isPending} required />
         ) : (
@@ -347,7 +353,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
                 </div>
             );
         });
-    }, [formBlocks, fieldsNameMap, file.formFields]);
+    }, [formBlocks, fieldsNameMap, form.formFields]);
     
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { 
@@ -357,7 +363,7 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
     return (
         <>        
         
-        <div className='mx-auto p-2'  key={file.name+'.form'}>
+        <div className='mx-auto p-2'  key={form.name+'.form'}>
             <div className='form-head flex'>
                 <div className='p-2'>            
                     <FontAwesomeIcon icon={faArrowLeft} onClick={goBack} />
@@ -382,9 +388,9 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
             <button id='BtnSend' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
             </button>
-            {/* <button id='BtnSave' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
+            <button id='BtnSave' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שמור
-            </button> */}
+            </button>
 
             {/* Alpha version => Testing */}
             <div ref={ sendRef } className='stagging-send flex mt-5'>
@@ -407,3 +413,4 @@ const Form = ({ file, manufactures, technicians , close }: Props) => {
 };
 
 export default Form;
+

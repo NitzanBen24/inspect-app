@@ -19,3 +19,17 @@ body {
 textarea[name="comments"] {
   height: 320px;
 }
+
+.form-list {
+  direction: rtl;
+}
+
+.form-list-item {
+  font-size: 14px;
+}
+
+.form-list-item > span {
+  padding: 3px;
+  display: flex;
+  align-items: center;
+}

@@ -22,7 +22,7 @@ const LoginForm = () => {
     openModal();      
   };
 
-  const {mutate: connectUser } = usePost('login',handleLoginSuccess, handleLoginError)
+  const {mutate: connectUser } = usePost('login','users',handleLoginSuccess, handleLoginError)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); 

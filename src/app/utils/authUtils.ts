@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { User } from './types';
+import { supabase } from '../lib/supabase';
+import { data } from 'autoprefixer';
 
 const SECRET_KEY = process.env.JWT_SECRET_KEY as string || '';
 const COOKIE_NAME = 'sessionId';
@@ -36,7 +38,7 @@ export function removeUserTkn(): NextResponse {
 
 export function addUserTkn(user: User): NextResponse {
     // Create a JWT with user data    
-    const payload = { id: user.id,name: user.name, email: user.email };
+    const payload = { id: user.id,name: user.name, email: user.email, role:user.role };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '1d' });
     
     // Set the JWT as an HTTP-only cookie

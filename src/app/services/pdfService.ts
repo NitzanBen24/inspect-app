@@ -6,7 +6,7 @@ import { FormField, PdfForm } from '../utils/types';
 
 
 // Get all pdf files
-export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => {
+export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
   const forms: PdfForm[] = []; 
 
   try {    
@@ -14,10 +14,12 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
 
       // Get all PDF files asynchronously
       const pdfFiles = (await fs.promises.readdir(pdfFolder)).filter(file => file.endsWith('.pdf'));      
-      
+      /** 
+       * Consider to change file to fileName
+      */
       for (const file of pdfFiles) {
           const filePath = path.join(pdfFolder, file);
-          const form: PdfForm = { name: file.replace('.pdf', ''), formFields: [] }; // Initialize form          
+          const form: PdfForm = { name: file.replace('.pdf', ''), formFields: [], status: 'new' }; // Initialize form          
 
           if (file === 'thetest.pdf') continue;
 
@@ -39,9 +41,9 @@ export const getAllForms = async (): Promise<PdfForm[] | { error: unknown }> => 
                   })
                 });
               }
-      
+                    
               // Add needed fields that not in the pdf file
-              form.formFields.push(...addFormFields())
+              form.formFields.push(...addFormFields());
               
               // Only push forms with fields
               if (form.formFields.length > 0) {
