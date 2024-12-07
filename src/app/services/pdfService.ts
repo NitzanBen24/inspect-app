@@ -19,9 +19,7 @@ export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
       */
       for (const file of pdfFiles) {
           const filePath = path.join(pdfFolder, file);
-          const form: PdfForm = { name: file.replace('.pdf', ''), formFields: [], status: 'new' }; // Initialize form          
-
-          if (file === 'thetest.pdf') continue;
+          const form: PdfForm = { name: file.replace('.pdf', ''), formFields: [], status: 'new' }; // Initialize form                    
 
           try {
               // Load and parse PDF document
