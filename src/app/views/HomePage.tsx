@@ -15,9 +15,8 @@ const sortRecords = (records: PdfForm[], id: string, role: string) => {
     ]
 
     if (role === 'admin') {
-        sortedRecords.push({ pending: records.filter((item: any) => item.status === 'pending') });  
-        /** option for a list of form that send to customer from Sofi ************** */
-        // sortedRecords.push({ sent: records.filter((item: any) => item.status === 'sent') });
+        sortedRecords.push({ pending: records.filter((item: any) => item.status === 'pending') });          
+        sortedRecords.push({ sent: records.filter((item: any) => item.status === 'sent') });
     } 
 
     return sortedRecords;
