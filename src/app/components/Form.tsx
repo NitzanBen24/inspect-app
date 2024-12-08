@@ -262,8 +262,13 @@ const Form = ({ form, close }: Props) => {
                 return;
             }
             
-            form.status = (user.role === 'admin') ? 'sent' : 'pending';            
-            sendMail = true;  
+            if (user.role === 'admin') {
+                form.status = 'sent';
+                sendMail = true;
+            } else {
+                form.status = 'pending';
+            }
+            
         }
         
         formSubmit({userId:user.id, userName: user.name, form:form, sendMail});
