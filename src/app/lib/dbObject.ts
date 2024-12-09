@@ -138,11 +138,15 @@ export const updateForm = async (id: string | number, payload: FieldsObject[]): 
  * Consider move this methods to a differtent folder and place
  */
 export const formToFields = (data:{payload: PdfForm, userId: string,userName: string, status: string}): FieldsObject[] => {  
+  
+  const excludedFields = ["ephone", "eemail", "elicense", "pphone", "pemail", "plicense"];
 
-  const queryData: FieldsObject = data.payload.formFields.filter((field) => field.require === true).reduce((obj:any, field) => {
-    let fieldName  = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
-    obj[fieldName] = field.value || ''; 
-    return obj;
+  const queryData: FieldsObject = data.payload.formFields
+    .filter((field) => field.require === true || excludedFields.includes(field.name))
+    .reduce((obj: any, field) => {
+      const fieldName = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
+      obj[fieldName] = field.value || ''; 
+      return obj;
   }, {});
 
   
@@ -150,7 +154,7 @@ export const formToFields = (data:{payload: PdfForm, userId: string,userName: st
   queryData.userid   = data.userId;
   queryData.userName = data.userName;
   queryData.status   = data.status;
-
+  console.log('formToFields.queryData!!!',queryData)
   return [queryData];
 
 }
