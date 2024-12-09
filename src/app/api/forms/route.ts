@@ -1,4 +1,4 @@
-import { getForms, addNewForm, formToFields, updateForm, fieldsToForm } from "@/app/lib/dbObject";
+import { getForms, addNewForm, formToFields, updateForm, fieldsToForm, updateFormStatus } from "@/app/lib/dbObject";
 import { handleFormSubmit } from "@/app/services/formService";
 import { getAllPDF } from "@/app/services/pdfService";
 import { FormField, FieldsObject, PdfForm } from "@/app/utils/types";
@@ -53,6 +53,30 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     } catch (error: unknown) {
         console.error("Unknown error:", error instanceof Error ? error.stack : error);
         return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
+    }
+}
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+    try {
+        const payload = await req.json(); // Expecting 'id' and 'updates' in the request body
+        
+        if (!payload.id || !payload.status) {
+            return NextResponse.json({ error: "Form ID and updates are required" }, { status: 400 });
+        }
+
+        const result = await updateFormStatus(payload); // Call your update logic here
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error || "Form update failed" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true, message: "Form updated successfully" });
+    } catch (error: unknown) {
+        console.error("Error updating form:", error instanceof Error ? error.stack : error);
+        return NextResponse.json({ error: "Failed to update form" }, { status: 500 });
     }
 }
 

@@ -73,3 +73,36 @@ export const usePost = <T, R = any>(
         },
     });
 };
+
+
+// Function to handle PATCH requests (update data)
+const patchData = async <T, R>(path: string, payload: T): Promise<R> => {
+    const { data } = await axios.patch(`/api/${path}`, payload);
+    return data;
+};
+
+export const usePatch = <T, R = any>(
+    path: string,
+    mutationKey: string | string[], // mutationKey for invalidating queries
+    onSuccess?: (data: R) => void,
+    onError?: (error: AxiosError) => void
+): UseMutationResult<R, AxiosError, T> => {
+    const queryClient = useQueryClient();
+
+    return useMutation<R, AxiosError, T>({
+        mutationFn: (payload: T) => patchData<T, R>(path, payload),
+        onSuccess: (data) => {
+            // Invalidate the query using the mutationKey
+            queryClient.invalidateQueries({
+                queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
+            });
+
+            // Call the optional onSuccess callback
+            onSuccess?.(data);
+        },
+        onError: (error) => {
+            // Call the optional onError callback
+            onError?.(error);
+        },
+    });
+};

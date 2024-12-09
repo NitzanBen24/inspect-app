@@ -91,13 +91,6 @@ const Form = ({ form, close }: Props) => {
     }, [form.formFields])
     
     const handleSaveSuccess = (data: any) => {
-        
-        /** leave this optional, ask Yaron and Sofi 
-        if (form.status === 'saved') {
-             goBack();
-         } 
-        */
-
         cleanForm();
         setMessage(data.message); 
         openModal();
@@ -271,7 +264,7 @@ const Form = ({ form, close }: Props) => {
             
         }
         
-        formSubmit({userId:user.id, userName: user.name, form:form, sendMail});
+        formSubmit({userId:form.userId || user.id, userName:form.userName || user.name, form:form, sendMail});
         
     };
     

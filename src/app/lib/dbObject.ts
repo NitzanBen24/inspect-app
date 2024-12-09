@@ -131,14 +131,33 @@ export const updateForm = async (id: string | number, payload: FieldsObject[]): 
   }
 };
 
+export const updateFormStatus = async (
+  payload: {id: string , status: string}
+): Promise<{ message: string; success?: boolean; error?: unknown }> => {
+  try {
+    const { error } = await supabase
+      .from("Forms")
+      .update({ status: payload.status }) // Update only the status field
+      .eq("id", payload.id); // Match the record by its ID
 
+    if (error) {
+      console.error("Error updating status:", error.message);
+      return { error, message: "Failed to update status!" };
+    }
+
+    return { message: "Status updated successfully", success: true };
+  } catch (err) {
+    console.error("Unexpected error updating status:", err);
+    return { error: err, message: "An unexpected error occurred while updating status!" };
+  }
+};
 
 
 /**
  * Consider move this methods to a differtent folder and place
  */
-export const formToFields = (data:{payload: PdfForm, userId: string,userName: string, status: string}): FieldsObject[] => {  
-  
+export const formToFields = (data:{payload: PdfForm, userId: string,userName: string, status: string}): FieldsObject[] => {
+
   const excludedFields = ["ephone", "eemail", "elicense", "pphone", "pemail", "plicense"];
 
   const queryData: FieldsObject = data.payload.formFields
