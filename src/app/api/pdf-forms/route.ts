@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prepareEmail, sendEmail } from '@/app/services/emailService';
 import { preparePdf, getAllPDF } from '@/app/services/pdfService';
 import { EmailInfo, FieldsObject, PdfForm } from '@/app/utils/types';
-import { addNewForm, fieldsToForm, getForms, formToFields } from '@/app/lib/dbObject';
+import { addNewForm, getForms } from '@/app/lib/dbObject';
+import { fieldsToForm, formToFields } from '@/app/lib/formatData';
 
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
