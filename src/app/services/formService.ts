@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { addNewForm, formToFields, getFormById, updateForm } from "../lib/dbObject";
+import { addNewForm, getFormById, updateForm } from "../lib/dbObject";//formToFields,
 import { EmailInfo, FieldsObject } from "../utils/types";
 import { prepareEmail, sendEmail } from "./emailService";
 import { preparePdf } from "./pdfService";
+import { formToFields } from "../lib/formatData";
 
 export const handleFormSubmit = async (data: any): Promise<{ success: boolean; message: string; data?:any; error?: unknown }> => {
     try {

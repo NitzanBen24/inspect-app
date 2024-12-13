@@ -27,7 +27,7 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
         queries: queries.map(({ key, path, options }) => ({
             queryKey: [key, path],
             queryFn: () => fetchData<T[number]>(path),
-            ...options, // Spread additional options like `enabled`, `retry`, etc.
+            ...options,
         })),
     }) as UseQueryResult<T[number]>[];
 
@@ -83,7 +83,7 @@ const patchData = async <T, R>(path: string, payload: T): Promise<R> => {
 
 export const usePatch = <T, R = any>(
     path: string,
-    mutationKey: string | string[], // mutationKey for invalidating queries
+    mutationKey: string | string[],
     onSuccess?: (data: R) => void,
     onError?: (error: AxiosError) => void
 ): UseMutationResult<R, AxiosError, T> => {
@@ -96,7 +96,6 @@ export const usePatch = <T, R = any>(
             queryClient.invalidateQueries({
                 queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
             });
-
             // Call the optional onSuccess callback
             onSuccess?.(data);
         },
@@ -106,3 +105,35 @@ export const usePatch = <T, R = any>(
         },
     });
 };
+
+
+const deleteData = async <R>(path: string, payload: { id: string }): Promise<R> => {
+    const { data } = await axios.delete(`/api/${path}`, {
+        data: payload,
+    });
+    return data;
+};
+
+
+export const useDelete = <R = any>(
+    path: string,
+    mutationKey: string | string[], // Key to invalidate queries
+    onSuccess?: (data: R) => void,
+    onError?: (error: AxiosError) => void
+): UseMutationResult<R, AxiosError, { id: string }> => {
+    const queryClient = useQueryClient();
+
+    return useMutation<R, AxiosError, { id: string }>({
+        mutationFn: (payload) => deleteData<R>(path, payload),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({
+                queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
+            });
+            onSuccess?.(data);
+        },
+        onError: (error) => {
+            onError?.(error);
+        },
+    });
+};
+

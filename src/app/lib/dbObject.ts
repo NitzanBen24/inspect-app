@@ -152,61 +152,21 @@ export const updateFormStatus = async (
   }
 };
 
+export const  deleteForm = async (id:string): Promise<{ message: string; success?: boolean; error?: unknown }> => {
+  try {
+    const { error } = await supabase
+    .from("Forms")
+    .delete() // Delete the record
+    .eq("id", id); // Match the record by its ID
 
-/**
- * Consider move this methods to a differtent folder and place
- */
-export const formToFields = (data:{payload: PdfForm, userId: string,userName: string, status: string}): FieldsObject[] => {
-
-  const excludedFields = ["ephone", "eemail", "elicense", "pphone", "pemail", "plicense"];
-
-  const queryData: FieldsObject = data.payload.formFields
-    .filter((field) => field.require === true || excludedFields.includes(field.name))
-    .reduce((obj: any, field) => {
-      const fieldName = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
-      obj[fieldName] = field.value || ''; 
-      return obj;
-  }, {});
-
-  
-  queryData.name     = data.payload.name;
-  queryData.userid   = data.userId;
-  queryData.userName = data.userName;
-  queryData.status   = data.status;
-  console.log('formToFields.queryData!!!',queryData)
-  return [queryData];
-
-}
-
-export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] => {
-  return records.map((record) => {
-
-    if (!form) {
-      return {
-        name: record.name,
-        formFields: [],
-        status: 'unknown',
-        id: record.id,
-      };
+    if (error) {
+      console.error("Error deleting form:", error.message);
+      return { error, message: "Failed to delete form!" };
     }
 
-    const formFields: FormField[] = form.formFields.map((formField) => { 
-      const recordFieldValue = record[formField.name.replace('-ls','')];         
-      return {
-        ...formField,
-        value: recordFieldValue || '', // Default to empty string if no value in the record
-      };
-    });
-    
-    return {
-      name: form.name,
-      formFields: formFields,
-      status: record.status,
-      id: record.id,
-      userId: record.userid,
-      userName: record.userName,
-      created: record.created_at,
-    };
-  });
-};
-
+    return { message: "Form deleted successfully", success: true };
+  } catch (err) {
+    console.error("Unexpected error updating status:", err);
+    return { error: err, message: "An unexpected error occurred while deleting form!" };
+  }
+}

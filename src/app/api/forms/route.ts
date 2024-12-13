@@ -1,7 +1,8 @@
-import { getForms, addNewForm, formToFields, updateForm, fieldsToForm, updateFormStatus } from "@/app/lib/dbObject";
+import { getForms, updateFormStatus, deleteForm } from "@/app/lib/dbObject";
+import { fieldsToForm } from "@/app/lib/formatData";
 import { handleFormSubmit } from "@/app/services/formService";
 import { getAllPDF } from "@/app/services/pdfService";
-import { FormField, FieldsObject, PdfForm } from "@/app/utils/types";
+import { PdfForm } from "@/app/utils/types";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -73,11 +74,35 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
             );
         }
 
-        return NextResponse.json({ success: true, message: "Form updated successfully" });
+        return NextResponse.json({ success: true, message: result.message });
     } catch (error: unknown) {
         console.error("Error updating form:", error instanceof Error ? error.stack : error);
         return NextResponse.json({ error: "Failed to update form" }, { status: 500 });
     }
 }
 
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+    try {
+        
+        const { id } = await req.json(); // Extract the `id` from the request body
+        
+        if (!id) {
+            return NextResponse.json({ error: "Form ID is required" }, { status: 400 });
+        }
+
+        const result = await deleteForm(id); // Call your delete service or database function
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error || "Form deletion failed" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true, message: result.message });
+    } catch (error: unknown) {
+        console.error("Error deleting form:", error instanceof Error ? error.stack : error);
+        return NextResponse.json({ error: "Failed to delete form" }, { status: 500 });
+    }
+}
 
