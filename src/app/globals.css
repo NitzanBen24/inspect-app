@@ -33,3 +33,12 @@ textarea[name="comments"] {
   display: flex;
   align-items: center;
 }
+
+.storage {
+  display: none;
+}
+
+.storage-toggle > svg {
+  position: relative;
+  right: 5px;
+}

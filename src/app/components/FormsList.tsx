@@ -7,6 +7,8 @@ import { useDelete, usePatch, usePost } from '../hooks/useQuery';
 import { useUser } from '../hooks/useUser';
 import { AxiosError } from 'axios';
 import Modal from './Modal';
+import { isStorageForm } from '../utils/actions';
+import { getHebrewString } from '../utils/AppContent';
 
 
 interface Props {
@@ -16,19 +18,7 @@ interface Props {
   openForm: (form:PdfForm) => void;
 }
 
-const setHebrewTitle = (title: string): string => {
-  const options: Record<string, string> = 
-    {
-      saved: 'שמורים',
-      pending: 'מחכים לחיוב',
-      sent: 'נשלחו לחיוב'
-    }
-  
-
-  return options[title] || 'בחר טופס';
-}
-
-const FormsList = ({ forms, openForm, title, addFilter }: Props) => {  
+const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
 
   const { user } = useUser();
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);
@@ -57,8 +47,7 @@ const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
       setMessage(error.message);
       openModal(); 
   };
-
-  const { mutate: deleteForm } = useDelete<{ id: string }>(
+  const { mutate: deleteForm } = useDelete(
       'forms', // API path
       'data', // Query key for invalidation
       onDeleteSuccess,
@@ -68,16 +57,16 @@ const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
   const removeForm = (event: React.MouseEvent, form: PdfForm) => {
       const formId = form.id?.toString();
       if (!formId) {
-          console.error('Form ID is missing!');
-          return;
+        console.error('Form ID is missing!');
+        return;
       }
       
       if (form.status === 'saved') {
-          deleteForm({ id: formId });
+        deleteForm({ id: formId, formName: form.name });
       }
 
       if (form.status === 'sent') {
-        updateForm({ id: formId, status: 'archive' });
+        updateForm({ id: formId, status: 'archive', formName: form.name });
       }
       event.stopPropagation();
   };
@@ -87,35 +76,52 @@ const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
     openForm(form);
   }
 
-  const openModal = () => setIsModalOpen(true);
-    const closeModal = () => { 
-        setIsModalOpen(false);
-    }
+  const openModal = () => {
+    setIsModalOpen(true);
+  }
 
+  const closeModal = () => { 
+      setIsModalOpen(false);
+  }
+
+//console.log('FormList=>',forms)
+  
   return (
       <>
       {forms.length > 0 && <div className='form-list p-2 mb-3'>
-          <h2 className='text-lg'>{setHebrewTitle(title)}:</h2>          
+          <h2 className='text-lg'>{getHebrewString(title)}:</h2>          
           <ul className='p-0 flex flex-col-reverse'>           
-            {forms.map((form) => (
+          {forms.map((form) => {
+            const isStorage = isStorageForm(form.formFields); // Check once per form
+            return (
               <li
-              className='form-list-item grid grid-cols-6 gap-3 place-items-center border-gray-400 border mb-1 rounded-md'
-              key={form.name+form?.id}
-              onClick={() => handleClick(form)}
-              >   
-                  
-                  <span>{form.name}</span>
-                  <span>{form.formFields.find((item) => item.name === 'customer')?.value || ''}</span>
-                  <span>{form.formFields.find((item) => item.name === 'provider')?.value || ''}</span>
-                  <span>{form?.userName}</span>                  
-                  <span>{typeof form?.created === 'string' ? form.created.slice(0, 10) : ''}</span> {/* Safe check */}
-  
-                  {(form.status !== 'new' && form.status !== 'pending') && <button className='btn-remove px-1 my-2 border-2 border-white bg-black text-white rounded-lg' onClick={(event) => removeForm(event, form)}>הסר</button> }
+                className={`form-list-item grid grid-cols-6 gap-3 place-items-center border-gray-400 border mb-1 rounded-md ${
+                  isStorage ? "bg-cyan-50" : "bg-white"
+                }`}
+                key={form.name + form?.id}
+                onClick={() => handleClick(form)}
+              >
+                <span>{getHebrewString(form.name)}</span>
+                <span>{form.formFields.find((item) => item.name === "customer")?.value || ""}</span>
+                <span>{form.formFields.find((item) => item.name === "provider")?.value || ""}</span>
+                <span>{form?.userName}</span>
+                <span>{typeof form?.created === "string" ? form.created.slice(0, 10) : ""}</span>
+                <div>                  
+                  {form.status !== "new" && form.status !== "pending" && (
+                    <button
+                      className="btn-remove px-1 border-2 border-white bg-black text-white rounded-lg"
+                      onClick={(event) => removeForm(event, form)}
+                    >
+                      הסר
+                    </button>
+                  )}
+                </div>
               </li>
-            ))}
+            );
+          })}
              {addFilter && <li
             className='form-list-item grid grid-cols-6 gap-3 place-items-center mb-2'
-            key={setHebrewTitle(title)}
+            key={getHebrewString(title)}
             >
               <span>שם טופס:</span>
               <span>לקוח:</span>

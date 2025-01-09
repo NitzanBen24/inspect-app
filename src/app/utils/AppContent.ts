@@ -5,7 +5,28 @@ export const formMessages = {
     missingPower: 'על מנת לשלוח טופס תקין, חובה למלא מודל ואת מספר המודלים',
 }
 
+export const sysStrings = {
+  email: {
+    successMessage: 'Email sent successfully',
+    failedMessage: 'Error sending email:',
+  },
+  database: {
+    saveFailed: 'Saving data failed!',
+  }
+}
+
+export const appStrings = {
+  email: {
+    success: 'המייל נשלח בהצלחה.',
+    failed: 'שליחת המייל נכשלה. ודאו שחיבור האינטרנט תקין ונסו שוב.'
+  },
+  dataSaved: 'הפרטים נשמרו בהצלחה. ',
+  dataSavedError: 'לא הצלחנו לשמור את הנתונים. אנא נסו שוב או פנו לתמיכה במידה שהבעיה נמשכת.',
+  
+}
+
 export const formFieldMap = {
+    //inspection
     head:['provider'],
     info:['customer', 'invoice', 'address', 'facillity-ls'],
     test: ['amper', 'kw'],
@@ -13,10 +34,18 @@ export const formFieldMap = {
     panel: ['punits', 'ppower', 'panel-ls', 'pmodel'],
     techs: ['electrician-ls', 'elicense', 'ephone', 'eemail','planner-ls', 'plicense', 'pphone', 'pemail'],
     data: ['voltl', 'voltn', 'omega', 'pm', 'rcurrent', 'mcurrent', 'check'],
+    //storage
+    storage: ['batteries','capacity', 'bmanufacture'],
+    //elevator
+    elevator: ['elevator', 'mainbreaker', 'mainbreakersize'],
+    //charge
+    charge: ['station', 'manufacture', 'model', 'power',  'maxcurrent', 'breakersize'],
     end: ['comments', 'message']
 }
 
+// FormFeilds
 export const fieldsNameMap: any = {
+    //inspection
     customer: 'שם לקוח',
     invoice: 'מספר הזמנה',
     provider: 'ספק עבודה',
@@ -42,8 +71,40 @@ export const fieldsNameMap: any = {
     facillity: 'מתקן',
     comments:'הערות',
     message:'הודעה',
+    //storage
+    batteries: 'סוללות',
+    capacity: 'מתח',
+    bmanufacture: 'שם יצרן',
+    //elevator
+    elevator: 'מספר מעלית',
+    mainbreaker: 'מפסק ראשי',
+    mainbreakersize: 'גודל מפסק ראשי',
+    //charge
+    station: 'מספר עמדה',
+    manufacture: 'שם היצרן',
+    model: 'דגם',
+    power: 'הספק',
+    maxcurrent: 'זרם מרבי',
+    breakersize: 'גודל המספק',
 }
 
 export const facillties = ['מחסן','לול','רפת','גג','תעשייה','מבנה מסחרי','מבנה מגורים'];
 
-export const appDropDwons = ['electrician', 'planner', 'facillity', 'convertor', 'panel']
+export const appDropDwons = ['electrician', 'planner', 'facillity', 'convertor', 'panel'];
+
+export const getHebrewString = (title: string): string => {
+    const options: Record<string, string> = 
+      {
+        files: 'בחר טופס',
+        saved: 'שמורים',
+        pending: 'מחכים לחיוב',
+        sent: 'נשלחו לחיוב',
+        inspection: 'בדיקה',
+        storage: 'אגירה',
+        charge: 'טעינה',
+        elevator: 'מעליות',
+      }
+    
+  
+    return options[title];
+  }

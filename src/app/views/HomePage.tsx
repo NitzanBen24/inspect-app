@@ -1,109 +1,83 @@
 import { useFetch, useMultiFetch } from "../hooks/useQuery";
 import FormsList from "../components/FormsList";
 import Form from "../components/Form";
-import { PdfForm, Manufacture, Technicians, FieldsObject, FormField, FormListObject } from "../utils/types";
+import { PdfForm, Manufacture, Technicians, FieldsObject } from "../utils/types";
 import { useEffect, useMemo, useState } from "react";
 import { useTechnician } from "../hooks/useTechnician";
 import { useManufacture } from "../hooks/useManufactures";
 import { useUser } from "../hooks/useUser";
 
+const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm: (form: PdfForm) => void }) => {
+  return (
+    <>
+      {records.map((list, index) =>
+        Object.keys(list).map((key) => {
+          const forms = list[key] as PdfForm[];
+          if (forms.length === 0) return null;
 
-const sortRecords = (records: PdfForm[], id: string, role: string) => {
-
-    const sortedRecords: any = [                
-        { saved: records.filter((item: any) => item.status === 'saved' && item.userId === id.toString()) },
-    ]
-
-    if (role === 'admin') {
-        sortedRecords.push({ pending: records.filter((item: any) => item.status === 'pending') });          
-        sortedRecords.push({ sent: records.filter((item: any) => item.status === 'sent') });
-    } 
-
-    return sortedRecords;
-}
-
+          return (
+            <FormsList
+              key={`${index}-${key}`}
+              openForm={selectForm}
+              title={key}
+              addFilter={true}
+              forms={forms}
+            />
+          );
+        })
+      )}
+    </>
+  );
+};
 
 const HomePage = () => {
-    const { user } = useUser();
-    const { techniciansSet,technicians } = useTechnician(); // Access technicians and shuffle function
-    const { manufacturesSet } = useManufacture();
-    const [form, setForm] = useState<PdfForm | undefined>();
-    
-    const { isLoading, isError, data } = useMultiFetch<[{ pdfFiles: PdfForm[], records: PdfForm[] }, Manufacture[], Technicians[], FieldsObject[]]>([
-        { key: "data", path: "forms" },//
-        { key: "manufactures", path: "get-data/manufactures" },
-        { key: "technicians", path: "get-data/technicians" },
-      ]);
+  const { user } = useUser();
+  const { techniciansSet } = useTechnician();
+  const { manufacturesSet } = useManufacture();
+  const [form, setForm] = useState<PdfForm | undefined>();
 
-    /// Destructure the response or provide defaults to avoid runtime errors
-    const [forms, allManufactures, allTechnicians] = (data ?? [{ pdfFiles: [], records: [] }, [], [], []]) as [
-        { pdfFiles: PdfForm[]; records: PdfForm[] },
-        Manufacture[],
-        Technicians[],
-        FieldsObject[]
-    ];
+  const { isLoading, isError, data } = useMultiFetch<[{ pdfFiles: PdfForm[]; activeForms: PdfForm[] }, Manufacture[], Technicians[], FieldsObject[]]>([
+    { key: "data", path: `forms/${user.id}` },
+    { key: "manufactures", path: "get-data/manufactures" },
+    { key: "technicians", path: "get-data/technicians" },
+  ]);
 
-     // Update technicians and manufactures context when data is successfully fetched
-    useEffect(() => {        
-        if (!isLoading && !isError && allManufactures) {
-            manufacturesSet(allManufactures as Manufacture[]); // Update manufacture context
-        }
-        if (!isLoading && !isError && allTechnicians) {
-            techniciansSet(allTechnicians as Technicians[]); // Update technician context
-        }
-    }, [isLoading, isError, allManufactures, allTechnicians, manufacturesSet, techniciansSet, forms, form]);
-
-
-    if (isLoading) return <div>Loading...</div>;
-    if (isError) return <div>Error loading data.</div>;
-    if (!forms) return <div>Missing forms</div>        
-
-    const selectForm = (cform: PdfForm) => {      
-        setForm(cform);
-    };
+  const [forms, allManufactures, allTechnicians] = (data ?? [{ pdfFiles: [], activeForms: [] }, [], []]) as [
+    { pdfFiles: PdfForm[]; activeForms: PdfForm[] },
+    Manufacture[],
+    Technicians[]
+  ];
   
-    const closeForm = () => {        
-        setForm(undefined);
+  useEffect(() => {
+    if (!isLoading && !isError) {
+      if (allManufactures) manufacturesSet(allManufactures);
+      if (allTechnicians) techniciansSet(allTechnicians);
     }
-    
-    const recordsPermited = sortRecords(forms.records, user.id.toString(), user.role);   
+  }, [isLoading, isError, allManufactures, allTechnicians, manufacturesSet, techniciansSet]);
 
-    return (
-      <>
-        {form ? (
-          <Form
-            close={closeForm}
-            form={form} 
-          />
-        ) : (
-          <>          
-          {(
-              <>
-                <FormsList openForm={selectForm} title="בחר טופס" addFilter={false} forms={forms.pdfFiles as PdfForm[]} />
-                {recordsPermited && 
-                    recordsPermited.map((list: any, index: number) => {
-                        return Object.keys(list).map((key) => (
-                            <FormsList 
-                                key={`${index}-${key}`}
-                                openForm={selectForm} 
-                                title={key}
-                                addFilter={true} 
-                                forms={list[key] as PdfForm[]} 
-                            />
-                            ))                    
-                        })}               
-              </>
-            )}            
-          </>
-        )}
-      </>
-    );
-  };
-  
-  export default HomePage;
+  const selectForm = (cform: PdfForm) => setForm(cform);
+  const closeForm = () => setForm(undefined);
 
-  
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading data.</div>;
 
+  const sortedRecords: any = [
+      { files: forms.pdfFiles.filter((item) => item.name !== 'storage')},
+      { saved: forms.activeForms.filter((item) => item.status === "saved" && item.userId === user.id.toString()) },
+      { pending: forms.activeForms.filter((item) => item.status === "pending") },
+      { sent: forms.activeForms.filter((item) => item.status === "sent") }
+  ];  
   
+  return (
+    <>
+      {form ? (
+        <Form close={closeForm} form={form} />
+      ) : (        
+        <RenderFormsLists records={sortedRecords} selectForm={selectForm} />        
+      )}
+    </>
+  );
+};
 
-  
+export default HomePage;
+

@@ -107,7 +107,7 @@ export const usePatch = <T, R = any>(
 };
 
 
-const deleteData = async <R>(path: string, payload: { id: string }): Promise<R> => {
+const deleteData = async <T,R>(path: string, payload: T): Promise<R> => {
     const { data } = await axios.delete(`/api/${path}`, {
         data: payload,
     });
@@ -115,16 +115,16 @@ const deleteData = async <R>(path: string, payload: { id: string }): Promise<R> 
 };
 
 
-export const useDelete = <R = any>(
+export const useDelete = <T,R = any>(
     path: string,
     mutationKey: string | string[], // Key to invalidate queries
     onSuccess?: (data: R) => void,
     onError?: (error: AxiosError) => void
-): UseMutationResult<R, AxiosError, { id: string }> => {
+): UseMutationResult<R, AxiosError, T> => {
     const queryClient = useQueryClient();
 
-    return useMutation<R, AxiosError, { id: string }>({
-        mutationFn: (payload) => deleteData<R>(path, payload),
+    return useMutation<R, AxiosError, T>({
+        mutationFn: (payload: T) => deleteData<T,R>(path, payload),
         onSuccess: (data) => {
             queryClient.invalidateQueries({
                 queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],

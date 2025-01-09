@@ -12,6 +12,8 @@ import { elementsWithValueExist } from '../utils/helper';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 import { useTechnician } from '../hooks/useTechnician';
 import { useManufacture } from '../hooks/useManufactures';
+import { isStorageForm } from '../utils/actions';
+import { AxiosError } from 'axios';
 
 // Utility function to get today's date in the format yyyy month (Hebrew) dd
 const formatHebrewDate = () => {
@@ -25,7 +27,7 @@ const formatHebrewDate = () => {
     return yy + "  " + mmHText + "  " + dd;
   };
 
-// Calculate power value
+// Calculate power value => move to server
 const calcPower = (formNode:HTMLDivElement | null): number | false => {
     if (!formNode) return false;
     
@@ -44,6 +46,39 @@ const calcPower = (formNode:HTMLDivElement | null): number | false => {
     
 }
 
+const getFormName = (fileName: string) : string => {
+    const names: any = {inspection: 'בדיקה', elevator: 'מעליות', charge: 'טעינה'};
+
+    return names[fileName];
+}
+
+// Bad function name
+const addInspectionFields = (formFields: FormField[], formRef: React.MutableRefObject<HTMLDivElement | null>): FieldsObject[] => {
+
+    let addFields = [];
+
+    // If mcurrent & rcurrent are filled add check and scurrent to formFields
+    if (elementsWithValueExist(formFields,['mcurrent', 'rcurrent'])) {
+        addFields.push({['check']: '*'}, {['scurrent']: '300'});             
+    }
+
+    //checkVoltage
+    if (!elementsWithValueExist(formFields,['volt-n', 'volt-l'])) {
+        addFields.push({['irrelavent']: '*'}, {['zero']: ''}, {['propper']: ''});            
+    } else {
+        addFields.push({['propper']: '*'}, {['zero']: '0'});            
+    }
+
+    let ocheckNode = formRef.current?.querySelector<HTMLInputElement>('[name="ocheck"]');       
+    if (ocheckNode && ocheckNode.checked) {            
+        addFields.push({['opass']: 'תקין'});            
+    } else {            
+        addFields.push({['ofail']: '*'});                  
+    }
+
+    return addFields;
+}
+
 interface Props {
     form: PdfForm,
     close: () => void,
@@ -54,16 +89,22 @@ const Form = ({ form, close }: Props) => {
     const { user } = useUser();
     const { technicians } = useTechnician();
     const { manufactures } = useManufacture();
-    //const [ formStatus, setFormStatus ] = useState<string>(form.status);
-    const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);        
+    
     const providers = [...new Set(technicians.map((item: Technicians) => item.employer))];
+    
+    const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);            
     const [ provider, setProvider ] = useState<string | boolean>(false);     
     const [ message, setMessage ] = useState<string>('');
+    
+    const hasStorageForm = useRef<boolean>(false);
     const formRef = useRef<HTMLDivElement | null>(null); 
     const formBlocks = Object.entries(formFieldMap).map(([key, value]) => {
-        return form.formFields.filter(
-            field => value.includes(field.name) && field.require
-        );
+        return { 
+            name: key, 
+            fields: form.formFields.filter(
+                field => value.includes(field.name) && field.require
+            )
+        }
     });
 
     const sendRef = useRef<HTMLInputElement | null>(null);        
@@ -76,34 +117,49 @@ const Form = ({ form, close }: Props) => {
         }
     };    
 
-    useEffect(() => {              
+    //console.log('Form.render=>',form)
+
+    useEffect(() => {     
+
+        // check if storage form 
+        if (form.name === 'inspection' && isStorageForm(form.formFields)) {            
+            toggleStorageFields();            
+        }
+
         let isProvider = provider;
+        // fill existing data of the form, if exists => edit action
         formRef.current?.querySelectorAll<HTMLElement>('.form-field').forEach((item) => {                 
             if (item instanceof HTMLInputElement || item instanceof HTMLTextAreaElement) {                               
                 const inputField = form.formFields.find((field) => field.name === item.name)                  
                 item.value =  inputField?.value || ''; // Clear the value for input and textarea
+                
                 if (item.name === 'provider' && item.value) {
                     isProvider = item.value;
-                }
+                }                
+
             }   
-        });        
-        if (isProvider) setProvider(isProvider);
+        });     
+
+        if (isProvider) setProvider(isProvider);        
+                
+        
+
     }, [form.formFields])
     
-    const handleSaveSuccess = (data: any) => {
+    const handleSubmitSuccess = (data: any) => {
         cleanForm();
         setMessage(data.message); 
         openModal();
     }
-    const handleSaveError = (error: unknown) => {        
-        setMessage("Error in saving data!");
+    const handleSubmitError = (error: any) => {            
+        setMessage(error.response?.data?.message || "Error in saving data!");
         openModal();        
     }    
     const { mutate: formSubmit, isPending } = usePost(
         'forms',
         'data',
-        handleSaveSuccess,
-        handleSaveError
+        handleSubmitSuccess,
+        handleSubmitError
     );
 
     const goBack = () => {
@@ -150,18 +206,91 @@ const Form = ({ form, close }: Props) => {
             } 
             
         });
-       
-        const fieldsToRemove = ['reciver','status'];
-        form.formFields = form.formFields.filter((item) => !fieldsToRemove.includes(item.name));
-
 
         form.formFields.forEach((item) => {            
             delete item.value;            
-        });        
+        });
         
+        //inspections form only
+        if (form.name === 'inspection') {// || form.name === 'בדיקה'
+            const fieldsToRemove = ['reciver','status'];
+            form.formFields = form.formFields.filter((item) => !fieldsToRemove.includes(item.name));    
+        }        
+        
+        /**
+         * check the array of refs, why so many
+         */
         handleClearDropdowns();// Clear all DropDowns
     }
 
+
+    const prepareToSend = () => { 
+
+        if (form.name === 'inspection') {       //|| form.name === 'בדיקה'
+
+            const newFields = addInspectionFields(form.formFields, formRef);    
+            setFields(newFields);
+
+            const ppower = calcPower(formRef.current);
+            if (ppower) {
+                setFields([{['ppower']: ppower.toString()}]);
+            }
+
+            // Inspections result
+            let statusVal = formRef.current?.querySelector<HTMLInputElement>('[name="status"]:checked')?.value;
+            if (statusVal) {
+                form.formFields.push({
+                    name: 'status',
+                    type: 'TextArea',
+                    require:false,
+                    value:statusVal,
+                })
+            } 
+        }
+        
+        setDate();
+
+        // Alpha version => Testing        
+        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]');    
+        if (sendToMe && sendToMe.checked) {            
+            form.formFields.push({
+                name: 'reciver',
+                type: 'TextArea',
+                require:false,                 
+            });
+        }       
+        
+    }
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
+        
+        prepareToSend();
+
+        fillFormFields();
+
+        const btnId = event.currentTarget.id;
+        let sendMail = false;
+
+        if (btnId === 'BtnSave') {       
+            form.status = 'saved';        
+        }
+
+        if (btnId === 'BtnSend') {         
+            if (user.role === 'admin' || user.role === 'supervisor') {
+                form.status = 'sent';
+                sendMail = true;
+            } else {
+                form.status = 'pending';
+            }            
+        }                
+        
+        //console.log('formSubmit=>form',form)
+        /** Refactor? consider add userId & userName to to form instans */
+        formSubmit({userId:form.userId || user.id, userName:form.userName || user.name, form:form, sendMail, hasStorageForm});
+        
+    };
+    
+    // 
     const fillFormFields = () => {
         const fieldsCollection = formRef.current?.getElementsByClassName('form-field');
         if (fieldsCollection) {
@@ -177,97 +306,7 @@ const Form = ({ form, close }: Props) => {
                 }                 
             });
         }
-
-        let newFields = [];
-
-        // If mcurrent & rcurrent are filled add check and scurrent to formFields
-        if (elementsWithValueExist(form.formFields,['mcurrent', 'rcurrent'])) {
-            newFields.push({['check']: '*'}, {['scurrent']: '300'});             
-        }
-
-        //checkVoltage
-        if (!elementsWithValueExist(form.formFields,['volt-n', 'volt-l'])) {
-            newFields.push({['irrelavent']: '*'}, {['zero']: ''}, {['propper']: ''});            
-        } else {
-            newFields.push({['propper']: '*'}, {['zero']: '0'});            
-        }
-
-        let ocheckNode = formRef.current?.querySelector<HTMLInputElement>('[name="ocheck"]');         
-        if (ocheckNode && ocheckNode.checked) {            
-            newFields.push({['opass']: 'תקין'});            
-        } else {            
-            newFields.push({['ofail']: '*'});                  
-        }
-
-
-        // Inspections result
-        let statusVal = formRef.current?.querySelector<HTMLInputElement>('[name="status"]:checked')?.value;
-        if (statusVal) {
-            form.formFields.push({
-                name: 'status',
-                type: 'TextArea',
-                require:false,
-                value:statusVal,
-            })
-        }
-        
-        setFields(newFields);
     }
-
-    const prepareToSend = () => { 
-
-        // Alpha version => Testing        
-        const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]');    
-        if (sendToMe && sendToMe.checked) {            
-            form.formFields.push({
-                name: 'reciver',
-                type: 'TextArea',
-                require:false,                 
-            });
-        }
-
-        const ppower = calcPower(formRef.current);
-        if (ppower) {
-            setFields([{['ppower']: ppower.toString()}]);
-        }
-
-        setDate();
-        
-        return true;
-    }
-
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
-        
-        const btnId = event.currentTarget.id;
-        let sendMail = false;
-        
-        fillFormFields();
-
-        if (btnId === 'BtnSave') {       
-            form.status = 'saved';        
-        }
-
-        if (btnId === 'BtnSend') {            
-            /** for now prepareToSenf allways return true */
-            if (!prepareToSend()) {
-                //** Mark input in red */
-                openModal();
-                return;
-            }
-            
-            if (user.role === 'admin') {
-                form.status = 'sent';
-                sendMail = true;
-            } else {
-                form.status = 'pending';
-            }
-            
-        }
-        
-        formSubmit({userId:form.userId || user.id, userName:form.userName || user.name, form:form, sendMail});
-        
-    };
-    
 
     const setFields = useCallback((fields: FieldsObject[]) => {
         fields.forEach(item => {
@@ -277,7 +316,25 @@ const Form = ({ form, close }: Props) => {
         });        
     }, [form.formFields]);
     
+    const toggleStorageFields = () => {
+                        
+        const storageElement: any = formRef.current?.querySelector('.storage');
+        
+        if (storageElement) {
+            const currentDisplay = storageElement.style.display;
+            // Toggle the display property
+            if (currentDisplay === 'block') {
+                hasStorageForm.current = false;
+                storageElement.setAttribute('style', 'display:none');
+            } else {
+                hasStorageForm.current = true;
+                storageElement.setAttribute('style', 'display:block');
+            }
+        }
+    };
+    
 
+    // Renders
     function getListOptions(name: string): string[] | ListOption[] {
         
         const nameToArrayMap: Record<string, string[] | ListOption[]> = {
@@ -326,6 +383,7 @@ const Form = ({ form, close }: Props) => {
                     {fieldsNameMap[field.name.replace("-ls", '')]}:
                 </label>
                 {fieldNode}
+                {/* Consider move this from here */}
                 {field.name === 'omega' && (
                     <>
                         <label className="block content-center mr-2 text-sm min-w-10 py-auto font-medium text-black">
@@ -333,21 +391,37 @@ const Form = ({ form, close }: Props) => {
                         </label>
                         <input type="checkbox" name="ocheck" defaultChecked={true} />
                     </>
-                )}
+                )}                
             </div>
         );
     };
 
+    
     // Memoize the rendering of blocks
     const renderBlocks = useMemo(() => {        
         return formBlocks.map((block, index) => {
-            // If no fields are found for this block, return null            
-            if (block.length === 0) return null;            
-            return (
-                <div key={`block-${index}`} className='form-block py-2 border-b-2 border-slate-800'>
-                    {block.map(field => (
-                        addField(field)
-                    ))}                    
+            // If no fields are found for this block, return null                 
+            if (!block.fields || block.fields.length === 0) return null;
+            
+            return (    
+                
+                <div key={`block-${index}`}>
+                    
+                    {form.name === 'inspection' && block.name === 'storage' && (
+                        <label key={'storage-lable'} onClick={toggleStorageFields} className="storage-toggle flex pt-2 content-center text-gray-400 text-sm min-w-10 py-auto font-medium ">
+                            טופס אגירה:
+                            {/* <svg className="-mr-1 size-5 text-gray-400 " viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                            </svg>     */}
+                        </label>                                        
+                    )}  
+                    
+                    { (<div key={`block-${index}-in`} className={`form-block py-2 border-b-2 border-slate-800 ${block.name}`}>
+                        {block.fields.map(field => (
+                            addField(field)
+                        ))}                    
+                    </div>) }
+
                 </div>
             );
         });
@@ -366,12 +440,12 @@ const Form = ({ form, close }: Props) => {
                 <div className='p-2'>            
                     <FontAwesomeIcon icon={faArrowLeft} onClick={goBack} />
                 </div>
-                <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס הצהרת בודק' }</h2>
+                <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס ' + getFormName(form.name) }</h2>
             </div>            
             <div ref={ formRef } className='form-body my-2'>                   
                 { renderBlocks }  
                 
-                <div className='flex status-wrap mt-3'>
+                {form.name === 'inspection' && <div className='flex status-wrap mt-3'>
                     <label className='block text-sm min-w-20 content-center font-medium text-black'>תוצאה:</label>
                     <div className='flex items-center'>
                         <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">עבר:</label>
@@ -379,7 +453,7 @@ const Form = ({ form, close }: Props) => {
                         <label className='block text-sm content-center font-medium text-black' htmlFor="status-complete">לא עבר:</label>
                         <input className='mx-2' type="radio" name='status' value="incomplete" id='status-incomplete' />
                     </div>                    
-                </div>
+                </div>}
 
             </div>
 

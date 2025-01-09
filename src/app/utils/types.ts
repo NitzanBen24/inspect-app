@@ -17,16 +17,16 @@ export interface PdfForm {
     created?: any;
 }
 
-export type FormState = {
-    [key: string]: string; // Dynamic key-value pairs for each form input
+export interface FormData {
+    form: PdfForm;
+    userId: string;
+    userName: string;
+    sendMail?: boolean;
+    hasStorage: boolean;
 }
 
 export type FieldsObject = {
     [key: string]: string; // Dynamic key-value pairs for each form input
-}
-
-export interface FormListObject {
-    [key: string]: PdfForm[]; // Assuming key is the record status (saved, pending)
 }
 
 export interface Manufacture {
@@ -79,14 +79,14 @@ export interface AuthFail {
     error: string;
 }
 
-export type ApiPostResponse = {
-    success?: string;
-    error?: string;
-}
+// export type ApiPostResponse = {
+//     success?: string;
+//     error?: string;
+// }
 
-export type ErrorResponse = {
-    error: string;
-  };
+// export type ErrorResponse = {
+//     error: string;
+//   };
 
 
 export interface EmailInfo {
@@ -94,6 +94,13 @@ export interface EmailInfo {
     provider?: string;
     message?: string;
     reciver?: string;
+    attachments? :any [];
+}
+
+export interface EmailResult {
+    success: boolean;
+    message: string;
+    error?: unknown;
 }
 
 export interface ListOption {

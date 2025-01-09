@@ -1,54 +1,51 @@
 import { FieldsObject, FormField, PdfForm } from "../utils/types";
 
-export const formToFields = (data:{payload: PdfForm, userId: string,userName: string, status: string}): FieldsObject[] => {
+export const formToFields = (data: any,excludedFields: string[]): FieldsObject[] => {
+  
+  const queryData: FieldsObject = data.form.formFields
+    .filter((field: FormField) => field.require === true || excludedFields.includes(field.name))
+    .reduce((obj: any, field: FormField) => {
+      const fieldName = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
+      obj[fieldName] = field.value || ''; 
+      return obj;
+  }, {});
+  
+  queryData.name     = data.form.name;
+  queryData.userid   = data.userId;    
+  queryData.status   = data.status;
+  queryData.userName = data.userName;// todo: Change queryData.userName to queryData.username
 
-    const excludedFields = ["ephone", "eemail", "elicense", "pphone", "pemail", "plicense"];
+  return [queryData];
+
+}
   
-    const queryData: FieldsObject = data.payload.formFields
-      .filter((field) => field.require === true || excludedFields.includes(field.name))
-      .reduce((obj: any, field) => {
-        const fieldName = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
-        obj[fieldName] = field.value || ''; 
-        return obj;
-    }, {});
-  
-    queryData.name     = data.payload.name;
-    queryData.userid   = data.userId;
-    queryData.userName = data.userName;
-    queryData.status   = data.status;
-    
-    return [queryData];
-  
-  }
-  
-  export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] => {
-    return records.map((record) => {
-  
-      if (!form) {
-        return {
-          name: record.name,
-          formFields: [],
-          status: 'unknown',
-          id: record.id,
-        };
-      }
-  
-      const formFields: FormField[] = form.formFields.map((formField) => { 
-        const recordFieldValue = record[formField.name.replace('-ls','')];         
-        return {
-          ...formField,
-          value: recordFieldValue || '', // Default to empty string if no value in the record
-        };
-      });
-      
+export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] => {  
+  return records.map((record) => {    
+    if (!form) {
       return {
-        name: form.name,
-        formFields: formFields,
-        status: record.status,
+        name: record.name,
+        formFields: [],
+        status: 'unknown',
         id: record.id,
-        userId: record.userid,
-        userName: record.userName,
-        created: record.created_at,
       };
-    });
-  };
+    }
+    
+    const formFields: FormField[] = form.formFields.map((formField) => { 
+      const recordFieldValue = record[formField.name.replace('-ls','')];         
+      return {
+        ...formField,
+        value: recordFieldValue || '', // Default to empty string if no value in the record
+      };
+    });            
+    
+    return {
+      name: record.name,
+      formFields: formFields,
+      status: record.status,
+      id: record.id,
+      userId: record.userid,
+      userName: record.userName, // todo: change userName to username
+      created: record.created_at,
+    };
+  });
+};
