@@ -13,7 +13,7 @@ export const formToFields = (data: any,excludedFields: string[]): FieldsObject[]
   queryData.name     = data.form.name;
   queryData.userid   = data.userId;    
   queryData.status   = data.status;
-  queryData.userName = data.userName;// todo: Change queryData.userName to queryData.username
+  queryData.user_name = data.userName;
 
   return [queryData];
 
@@ -44,7 +44,7 @@ export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] 
       status: record.status,
       id: record.id,
       userId: record.userid,
-      userName: record.userName, // todo: change userName to username
+      userName: record.user_name,
       created: record.created_at,
     };
   });
