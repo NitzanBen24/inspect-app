@@ -8,76 +8,14 @@ import { usePost } from '../hooks/useQuery';
 import Modal from './Modal';
 import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/AppContent';
 import { useUser } from '../hooks/useUser';
-import { elementsWithValueExist } from '../utils/helper';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 import { useTechnician } from '../hooks/useTechnician';
 import { useManufacture } from '../hooks/useManufactures';
 import { isStorageForm } from '../utils/actions';
-import { AxiosError } from 'axios';
+import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks, getHebrewFormName } from '../client/utils/formUtil';
 
-// Utility function to get today's date in the format yyyy month (Hebrew) dd
-const formatHebrewDate = () => {
-    const monthsHebrew = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-    const today = new Date();
-    const yy = today.getFullYear().toString(); 
 
-    const mmHText = monthsHebrew[today.getMonth()];
-    const dd = today.getDate().toString();
-    
-    return yy + "  " + mmHText + "  " + dd;
-  };
 
-// Calculate power value => move to server
-const calcPower = (formNode:HTMLDivElement | null): number | false => {
-    if (!formNode) return false;
-    
-    const modelNode = formNode.querySelector<HTMLInputElement>("[name='pmodel']");
-    const unitNode = formNode.querySelector<HTMLInputElement>("[name='punits']");
-
-    if (!modelNode || !unitNode) {     
-        console.error('Model or Unit field not found');       
-        return false;
-    }
-
-    const modelValue = parseFloat(modelNode.value);
-    const unitValue = parseFloat(unitNode.value);
-    const result = (unitValue * modelValue * 0.001).toFixed(2);
-    return !isNaN(modelValue) && !isNaN(unitValue) ? parseFloat(result) : false;
-    
-}
-
-const getFormName = (fileName: string) : string => {
-    const names: any = {inspection: 'בדיקה', elevator: 'מעליות', charge: 'טעינה'};
-
-    return names[fileName];
-}
-
-// Bad function name
-const addInspectionFields = (formFields: FormField[], formRef: React.MutableRefObject<HTMLDivElement | null>): FieldsObject[] => {
-
-    let addFields = [];
-
-    // If mcurrent & rcurrent are filled add check and scurrent to formFields
-    if (elementsWithValueExist(formFields,['mcurrent', 'rcurrent'])) {
-        addFields.push({['check']: '*'}, {['scurrent']: '300'});             
-    }
-
-    //checkVoltage
-    if (!elementsWithValueExist(formFields,['volt-n', 'volt-l'])) {
-        addFields.push({['irrelavent']: '*'}, {['zero']: ''}, {['propper']: ''});            
-    } else {
-        addFields.push({['propper']: '*'}, {['zero']: '0'});            
-    }
-
-    let ocheckNode = formRef.current?.querySelector<HTMLInputElement>('[name="ocheck"]');       
-    if (ocheckNode && ocheckNode.checked) {            
-        addFields.push({['opass']: 'תקין'});            
-    } else {            
-        addFields.push({['ofail']: '*'});                  
-    }
-
-    return addFields;
-}
 
 interface Props {
     form: PdfForm,
@@ -98,14 +36,7 @@ const Form = ({ form, close }: Props) => {
     
     const hasStorageForm = useRef<boolean>(false);
     const formRef = useRef<HTMLDivElement | null>(null); 
-    const formBlocks = Object.entries(formFieldMap).map(([key, value]) => {
-        return { 
-            name: key, 
-            fields: form.formFields.filter(
-                field => value.includes(field.name) && field.require
-            )
-        }
-    });
+    const formBlocks = generateFormBlocks(form.formFields);
 
     const sendRef = useRef<HTMLInputElement | null>(null);        
     const dropdownRefs = useRef<SearchableDropdownHandle[]>([]);// Array of DropDown lists refs
@@ -141,9 +72,7 @@ const Form = ({ form, close }: Props) => {
         });     
 
         if (isProvider) setProvider(isProvider);        
-                
         
-
     }, [form.formFields])
     
     const handleSubmitSuccess = (data: any) => {
@@ -166,33 +95,7 @@ const Form = ({ form, close }: Props) => {
         close();
     }
 
-    const handleListChange = useCallback((value: string, name: string, id?: number) => {   
-
-        if (name === 'provider') {
-            setProvider(value)
-        }        
-    
-        if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
-
-    },[setProvider]);
-
-    const setTechniciansDetails = (type: string, val: string, id: number ) => {        
-        if (!formRef.current) return false; 
-
-        const technician = technicians.find((item) => item.id === id)
-        if (technician) {
-            let typeChar = type[0];   
-            let techInfo = [{[type]: technician.name || ''}, {[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];            
-            setFields(techInfo);
-        }                                 
-    }
-
     const setDate = () => setFields([{['date']: formatHebrewDate()}]);
-    
-     // Clear all DropDwons
-    const handleClearDropdowns = () => {
-        dropdownRefs.current.forEach((ref) => ref.clear());
-    };
   
     const cleanForm = () => {              
         if (!formRef.current) {
@@ -222,7 +125,6 @@ const Form = ({ form, close }: Props) => {
          */
         handleClearDropdowns();// Clear all DropDowns
     }
-
 
     const prepareToSend = () => { 
 
@@ -335,6 +237,33 @@ const Form = ({ form, close }: Props) => {
     
 
     // Renders
+    const handleListChange = useCallback((value: string, name: string, id?: number) => {   
+
+        if (name === 'provider') {
+            setProvider(value)
+        }        
+    
+        if (id && (name === 'electrician-ls' || name === 'planner-ls')) setTechniciansDetails(name, value, id);
+
+    },[setProvider]);
+
+    const setTechniciansDetails = (type: string, val: string, id: number ) => {        
+        if (!formRef.current) return false; 
+
+        const technician = technicians.find((item) => item.id === id)
+        if (technician) {
+            let typeChar = type[0];   
+            let techInfo = [{[type]: technician.name || ''}, {[typeChar+'email']: technician.email || ''}, {[typeChar+'license']: technician.license || ''}, {[typeChar+'phone']: technician.phone || ''}];            
+            setFields(techInfo);
+        }                                 
+    }    
+    
+     // Clear all DropDwons
+    const handleClearDropdowns = () => {
+        dropdownRefs.current.forEach((ref) => ref.clear());
+    };
+
+
     function getListOptions(name: string): string[] | ListOption[] {
         
         const nameToArrayMap: Record<string, string[] | ListOption[]> = {
@@ -366,23 +295,31 @@ const Form = ({ form, close }: Props) => {
 
     const addField = (field: FormField) => {       
         
-        const listOptions = getListOptions(field.name.replace("-ls", ""));        
-        // Determine the field node        
-        const fieldNode = field.type === 'DropDown' ? (            
-            <SearchableDropdown ref={registerRef} options={listOptions} fieldName={field.name}  text="חפש" value={field.value || ''} onValueChange={handleListChange} />
-        ) : field.type === 'TextArea' ? (
-            <textarea className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" key={field.name} name={field.name} rows={3} disabled={isPending} required />
-        ) : (
-            <input className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" type="text" key={field.name} name={field.name} disabled={isPending} required />
-        );
+        const listOptions = field.type === 'DropDown' ? getListOptions(field.name.replace("-ls", "")) : [];
+        
+        const renderField = () => {
+            if (field.type === 'DropDown') {
+                return (
+                    <SearchableDropdown ref={registerRef} options={listOptions} fieldName={field.name}  text="חפש" value={field.value || ''} onValueChange={handleListChange} />                
+                );
+            }
+            if (field.type === 'TextArea') {
+                return (
+                    <textarea className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" key={field.name} name={field.name} rows={3} disabled={isPending} required/>
+                );
+            }
+            return (
+                <input className="form-field mt-1 w-full border border-gray-300 rounded-lg shadow-sm" type="text" key={field.name} name={field.name} disabled={isPending} required />
+            );
+        };
 
         // Return the complete JSX block
         return (
             <div key={`field-${field.name}`} className="form-item my-2 flex">
                 <label className="block content-center text-sm min-w-20 font-medium text-black">
                     {fieldsNameMap[field.name.replace("-ls", '')]}:
-                </label>
-                {fieldNode}
+                </label>               
+                {renderField()}
                 {/* Consider move this from here */}
                 {field.name === 'omega' && (
                     <>
@@ -395,7 +332,6 @@ const Form = ({ form, close }: Props) => {
             </div>
         );
     };
-
     
     // Memoize the rendering of blocks
     const renderBlocks = useMemo(() => {        
@@ -428,9 +364,7 @@ const Form = ({ form, close }: Props) => {
     }, [formBlocks, fieldsNameMap, form.formFields]);
     
     const openModal = () => setIsModalOpen(true);
-    const closeModal = () => { 
-        setIsModalOpen(false);
-    }
+    const closeModal = () => setIsModalOpen(false);
     
     return (
         <>        
@@ -440,7 +374,7 @@ const Form = ({ form, close }: Props) => {
                 <div className='p-2'>            
                     <FontAwesomeIcon icon={faArrowLeft} onClick={goBack} />
                 </div>
-                <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס ' + getFormName(form.name) }</h2>
+                <h2 className='text-2xl font-bold flex-grow text-right text-gray-800'>{'טופס ' + getHebrewFormName(form.name) }</h2>
             </div>            
             <div ref={ formRef } className='form-body my-2'>                   
                 { renderBlocks }  

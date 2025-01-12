@@ -25,6 +25,7 @@ export const appStrings = {
   
 }
 
+// todo: change name, maybe formBlocksMap
 export const formFieldMap = {
     //inspection
     head:['provider'],
@@ -72,8 +73,8 @@ export const fieldsNameMap: any = {
     comments:'הערות',
     message:'הודעה',
     //storage
-    batteries: 'סוללות',
-    capacity: 'מתח',
+    batteries: 'כמות סוללות',
+    capacity: 'הספק סוללה',
     bmanufacture: 'שם יצרן',
     //elevator
     elevator: 'מספר מעלית',

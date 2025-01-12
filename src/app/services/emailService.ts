@@ -16,7 +16,7 @@ interface MailOptions {
 }
 
 /** todo: consider make this private */
-export const prepareEmail = (fields: FormField[]): EmailInfo => {
+export const prepareEmail = (fields: FormField[], role: string, formName: string): EmailInfo => {
   
   const options: EmailInfo = {};  
   const emailFields = ['customer', 'provider', 'message', 'reciver'];
@@ -28,9 +28,8 @@ export const prepareEmail = (fields: FormField[]): EmailInfo => {
     }
   });
 
-  // Alpha version => Testing
-  /* add Yarons mail */
-  options.reciver = 'hazanreport@gmail.com';//'tcelctric@gmail.com';
+  // Alpha version => Testing  
+  options.reciver = (role === 'admin' || formName === 'inspection') ? 'hazanreport@gmail.com' : 'tcelctric@gmail.com';
   const reciverField = fields.find((item) => item.name === 'reciver');
   if (reciverField) {    
     options.reciver = 'nitzanben24@gmail.com';
@@ -67,7 +66,7 @@ export async function sendEmail({ email }: MailOptions): Promise<{ success: bool
     const emailResponse = await transporter.sendMail(options);        
 
     //LOGS
-    console.log(sysStrings.email.successMessage)
+    console.info(sysStrings.email.successMessage)
 
     return { success: true, message: appStrings.email.success, response: emailResponse };
     

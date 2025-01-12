@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, updateForm } from "../lib/db/forms";//formToFields,
+import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, updateForm } from "../lib/db/forms";
 import { EmailInfo, EmailResult, FieldsObject, FormData, PdfForm } from "../utils/types";
 import { prepareEmail, sendEmail } from "./emailService";
 import { findPdfFile, getAllPDF, getPDFs, preparePdf } from "./pdfService";
@@ -121,8 +121,9 @@ async function _prepareToSend (data: any): Promise<EmailInfo> {
     }           
                         
     // Prepare PDF documents concurrently
-    const pdfDocs = await Promise.all(pdfForms.map((form) => preparePdf(form)));         
-    const email = prepareEmail(pdfForms[0].formFields);
+    const pdfDocs = await Promise.all(pdfForms.map((form) => preparePdf(form)));            
+    const { role } = (pdfForms[0].userId) ? await getRole(pdfForms[0].userId) : 'admin';
+    const email = prepareEmail(pdfForms[0].formFields, role, pdfForms[0].name);
     email.attachments = pdfDocs;
     
     return email;

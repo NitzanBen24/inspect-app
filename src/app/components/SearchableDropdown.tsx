@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { ListOption } from '../utils/types';
 
 interface Props {
@@ -16,26 +16,34 @@ export interface SearchableDropdownHandle {
 const SearchableDropdown = forwardRef<SearchableDropdownHandle, Props>(
   ({ options, fieldName, text, value, onValueChange }: Props, ref) => {
     const [query, setQuery] = useState(value);
-    const [filteredOptions, setFilteredOptions] = useState<ListOption[]>([]);
+    //const [filteredOptions, setFilteredOptions] = useState<ListOption[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const normalizedOptions: ListOption[] = Array.isArray(options)
-      ? options.map((option) =>
-          typeof option === 'string' ? { val: option } : option
-        )
-      : [];
+    const normalizedOptions = useMemo(
+      () =>
+        Array.isArray(options)
+          ? options.map((option) =>
+              typeof option === 'string' ? { val: option } : option
+            )
+          : [],
+      [options]
+    );
 
-    const filterOptions = (input: string) => {
-      return normalizedOptions.filter((option) =>
-        option.val.toLowerCase().includes(input.toLowerCase())
-      );
-    };
+    // Filtered options are derived dynamically from `normalizedOptions` and `query`.
+    const filteredOptions = useMemo(
+      () =>
+        query
+          ? normalizedOptions.filter((option) =>
+              option.val.toLowerCase().includes(query.toLowerCase())
+            )
+          : normalizedOptions,
+      [query, normalizedOptions]
+    );
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const input = e.target.value;
       setQuery(input);
-      setFilteredOptions(filterOptions(input));
     };
 
     const handleOptionClick = (option: ListOption) => {
@@ -45,16 +53,12 @@ const SearchableDropdown = forwardRef<SearchableDropdownHandle, Props>(
     };
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-
-    useEffect(() => {
-      setFilteredOptions(normalizedOptions);
+    
+    useEffect(() => {    
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
