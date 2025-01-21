@@ -198,7 +198,9 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     }
 
     // check => maybe only for inspection
-    _addComments(pdfDoc, file.formFields, hebrewFont);
+    if (file.name === 'inspection') {
+      _addComments(pdfDoc, file.formFields, hebrewFont);
+    }    
     
     //Make file read only
     //form.flatten();

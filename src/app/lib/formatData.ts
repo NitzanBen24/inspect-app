@@ -6,7 +6,7 @@ export const formToFields = (data: any,excludedFields: string[]): FieldsObject[]
     .filter((field: FormField) => field.require === true || excludedFields.includes(field.name))
     .reduce((obj: any, field: FormField) => {
       const fieldName = field.name.includes("-ls") ? field.name.replace("-ls", "") : field.name;
-      obj[fieldName] = field.value || ''; 
+      obj[fieldName] = field.value?.replace(/\u200F/g, '') || ''; 
       return obj;
   }, {});
   
