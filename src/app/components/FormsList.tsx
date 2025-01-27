@@ -8,19 +8,23 @@ import { useUser } from '../hooks/useUser';
 import { AxiosError } from 'axios';
 import Modal from './Modal';
 import { isStorageForm } from '../utils/actions';
-import { getHebrewString } from '../utils/AppContent';
+import { getHebrewString } from '../utils/helper';
+import { ChevronDownIcon } from '@heroicons/react/16/solid';
+
 
 
 interface Props {
   forms: PdfForm[];
   addFilter: boolean;
   title: string;
+  display: boolean;
   openForm: (form:PdfForm) => void;
 }
 
-const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
+const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
 
   const { user } = useUser();
+  const [ show, setShow ] = useState<boolean>(display);
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);
   const [ message, setMessage ] = useState<string>('');
 
@@ -84,14 +88,22 @@ const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
       setIsModalOpen(false);
   }
 
+  const toggleList = () => {
+    setShow(!show)
+  }
+
 //console.log('FormList=>',forms)
   
   return (
       <>
-      {forms.length > 0 && <div className='form-list p-2 mb-3'>
-          <h2 className='text-lg'>{getHebrewString(title)}:</h2>          
+      {forms.length > 0 && <div className='form-list border-gray-400 border-bottom py-2 px-4'>
+          <h2 className='flex text-lg cursor-pointer' onClick={toggleList}>
+            {getHebrewString(title)}
+            {/* <ChevronDown />             */}
+            {title && <ChevronDownIcon className="size-6"/>}
+          </h2>          
           <ul className='p-0 flex flex-col-reverse'>           
-          {forms.map((form) => {
+          {show && forms.map((form) => {
             const isStorage = isStorageForm(form.formFields); // Check once per form
             return (
               <li
@@ -119,7 +131,7 @@ const FormsList = ({ forms, openForm, title, addFilter }: Props) => {
               </li>
             );
           })}
-             {addFilter && <li
+             {show && addFilter && <li
             className='form-list-item grid grid-cols-6 gap-3 place-items-center mb-2'
             key={getHebrewString(title)}
             >

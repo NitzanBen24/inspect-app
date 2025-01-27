@@ -11,6 +11,12 @@ body {
     background-color:#dc782fcf;
 }
 
+.app-header {
+  border-bottom: solid #f86f0f54;
+  /* #f86f0f; */
+}
+
+
 .form-body {
   direction: rtl;
 }
@@ -20,7 +26,8 @@ textarea[name="comments"] {
   height: 320px;
 }
 
-.form-list {
+.form-list,
+.archive-block {
   direction: rtl;
 }
 
@@ -41,4 +48,26 @@ textarea[name="comments"] {
 .storage-toggle > svg {
   position: relative;
   right: 5px;
+}
+
+.archive-view {
+  display: block;
+}
+
+
+@media (min-width: 768px) {
+  .main-wrapp {
+    border: solid 1px #f86f0f54;
+    border-radius: 8px;
+    max-width: 750px;
+    /* margin-right: auto; */
+    margin: auto;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .archive-view {
+    display: none;
+  }
 }

@@ -108,6 +108,15 @@ export interface ListOption {
     id?: number;
 }
 
+
+export interface SearchData {
+    name?: string;
+    customer?: string;
+    user_name?: string;
+    date?: string;
+}
+
+
 export type QueryConfig<T> = {
     key: string;
     path: string;

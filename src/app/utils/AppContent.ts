@@ -1,5 +1,3 @@
-//import { FormField } from "../utils/types";
-
 
 export const formMessages = {
     missingPower: 'על מנת לשלוח טופס תקין, חובה למלא מודל ואת מספר המודלים',
@@ -8,7 +6,8 @@ export const formMessages = {
 export const sysStrings = {
   email: {
     successMessage: 'Email sent successfully',
-    failedMessage: 'Error sending email:',
+    failedMessage: 'Failed to send email: ',
+    missingInfo: 'file name or receiver is missing!'
   },
   database: {
     saveFailed: 'Saving data failed!',
@@ -22,6 +21,9 @@ export const appStrings = {
   },
   dataSaved: 'הפרטים נשמרו בהצלחה. ',
   dataSavedError: 'לא הצלחנו לשמור את הנתונים. אנא נסו שוב או פנו לתמיכה במידה שהבעיה נמשכת.',
+  archive: 'ארכיון',
+  clear: 'נקה',
+  missigRecords: 'לא נמצאו רשומות מתאימות...'
   
 }
 
@@ -93,19 +95,3 @@ export const facillties = ['מחסן','לול','רפת','גג','תעשייה','�
 
 export const appDropDwons = ['electrician', 'planner', 'facillity', 'convertor', 'panel'];
 
-export const getHebrewString = (title: string): string => {
-    const options: Record<string, string> = 
-      {
-        files: 'בחר טופס',
-        saved: 'שמורים',
-        pending: 'מחכים לחיוב',
-        sent: 'נשלחו לחיוב',
-        inspection: 'בדיקה',
-        storage: 'אגירה',
-        charge: 'טעינה',
-        elevator: 'מעליות',
-      }
-    
-  
-    return options[title];
-  }

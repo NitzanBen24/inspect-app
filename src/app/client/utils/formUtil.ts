@@ -35,14 +35,6 @@ export const calcPower = (formNode:HTMLDivElement | null): number | false => {
     
 }
 
-
-export const getHebrewFormName = (fileName: string) : string => {
-    const names: any = {inspection: 'בדיקה', elevator: 'מעליות', charge: 'טעינה'};
-
-    return names[fileName];
-}
-
-
 // Bad function name
 export const addInspectionFields = (formFields: FormField[], formRef: React.MutableRefObject<HTMLDivElement | null>): FieldsObject[] => {
 

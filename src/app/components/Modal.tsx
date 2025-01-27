@@ -63,6 +63,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
           padding: 20px;
           margin: auto 15px;
           border-radius: 5px;
+          max-width: 500px;
         }
       `}</style>
     </div>,

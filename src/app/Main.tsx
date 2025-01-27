@@ -9,6 +9,8 @@ import { isAuthResponse } from './utils/typeGuards';
 import Image from 'next/image';
 import { TechniciansProvider } from './contexts/TechniciansContext';
 import { ManufactureProvider } from './contexts/ManufacturesContext';
+import AppHeader from './components/AppHeader';
+import { Container } from 'react-bootstrap';
 
 
 
@@ -33,30 +35,15 @@ const Main = () => {
     const disconnectUser = () => userAuthMutation({});
 
     return (
-        <>
-            <div className="app-header my-3 px-2">
-                <div className="flex justify-between items-center">                
-                    <div className="user-toggle">                                                
-                        {user.isLoggedIn ? <button className='border-2 p-1 text-xs border-black text-blck rounded-lg' onClick={ disconnectUser }>Logout</button> : ''}
-                    </div>
-                    <div className="logo p-2">
-                        <Image
-                            src="/img/logo.jpg"
-                            alt="Company Logo"
-                            // layout="responsive"
-                            width={86}
-                            height={76}
-                            objectFit="contain"
-                            priority                    // Loads the logo quickly
-                        />
-                    </div>
-                </div>
-            </div>
+        <>            
+            <AppHeader logOutUser={ disconnectUser } />
                     
             {user.isLoggedIn ? 
             <ManufactureProvider>
             <TechniciansProvider>
-                <HomePage />
+                <Container fluid className='main-container'>
+                    <HomePage />
+                </Container>
             </TechniciansProvider>
             </ManufactureProvider>
             

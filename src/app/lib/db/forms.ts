@@ -1,4 +1,4 @@
-import { FieldsObject } from "@/app/utils/types";
+import { FieldsObject, SearchData } from "@/app/utils/types";
 import { supabase } from "../supabase";
 
 
@@ -142,3 +142,36 @@ export const  deleteForm = async (id:string, tableName: string): Promise<{ messa
   return { message: "Form deleted successfully", success: true };
 
 }
+
+export const getSearchForms = async (searchQuery: SearchData, tableName: string): Promise<any> => {
+  try {
+    
+    let query = supabase.from(tableName).select('*').eq('status', 'archive');
+
+    // Add filters dynamically
+    Object.entries(searchQuery).forEach(([key, value]) => {
+      if (key === 'created_at') {
+        // Handle date filtering for the created_at field
+        query = query.gte(key, `${value}T00:00:00`).lt(key, `${value}T23:59:59`);
+      } else {
+        // Handle other fields
+        query = query.ilike(key, `%${value}%`); // Use ilike for partial matches
+      }
+    });
+
+    // Execute the query
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching: getSearchForms:', error);
+      throw error; // Re-throw the error to be handled by the outer try-catch block
+    }
+    
+    return data;
+
+  } catch (error) {
+    console.error('Error in getSearchForms:', error);
+    // Handle the error here, e.g., return a default value, throw a custom error, etc.
+    return null; 
+  }
+};

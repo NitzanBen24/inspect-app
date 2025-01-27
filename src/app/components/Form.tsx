@@ -12,7 +12,8 @@ import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdo
 import { useTechnician } from '../hooks/useTechnician';
 import { useManufacture } from '../hooks/useManufactures';
 import { isStorageForm } from '../utils/actions';
-import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks, getHebrewFormName } from '../client/utils/formUtil';
+import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks } from '../client/utils/formUtil';
+import { getHebrewFormName } from '../utils/helper';
 
 
 
@@ -50,8 +51,7 @@ const Form = ({ form, close }: Props) => {
 
     //console.log('Form.render=>',form)
 
-    useEffect(() => {     
-
+    useEffect(() => {
         // check if storage form 
         if (form.name === 'inspection' && isStorageForm(form.formFields)) {            
             toggleStorageFields();            
@@ -67,7 +67,6 @@ const Form = ({ form, close }: Props) => {
                 if (item.name === 'provider' && item.value) {
                     isProvider = item.value;
                 }                
-
             }   
         });     
 
@@ -75,9 +74,9 @@ const Form = ({ form, close }: Props) => {
         
     }, [form.formFields])
     
-    const handleSubmitSuccess = (data: any) => {
+    const handleSubmitSuccess = (res: any) => {        
         cleanForm();
-        setMessage(data.message); 
+        setMessage(res.message); 
         openModal();
     }
     const handleSubmitError = (error: any) => {            
@@ -185,14 +184,18 @@ const Form = ({ form, close }: Props) => {
                 form.status = 'pending';
             }            
         }                
-        
-        //console.log('formSubmit=>form',form)
-        /** Refactor? consider add userId & userName to to form instans */
-        formSubmit({userId:form.userId || user.id, userName:form.userName || user.name, form:form, sendMail, hasStorageForm});
+                
+        formSubmit({
+            userId:form.userId || user.id, 
+            userName:form.userName || user.name, 
+            form:form, 
+            sendMail, 
+            hasStorageForm,
+            action: 'submit',
+        });
         
     };
-    
-    // 
+     
     const fillFormFields = () => {
         const fieldsCollection = formRef.current?.getElementsByClassName('form-field');
         if (fieldsCollection) {

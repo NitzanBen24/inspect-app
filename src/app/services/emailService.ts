@@ -42,9 +42,9 @@ export const prepareEmail = (fields: FormField[], role: string, formName: string
 export async function sendEmail({ email }: MailOptions): Promise<{ success: boolean; message: string; response?: any; error?: unknown }> {
   
   if (!email.reciver || !email.customer || !email.attachments) {
-    const error = 'Failed to send email: file name or receiver is missing!';
+    const error = sysStrings.email.failedMessage + sysStrings.email.missingInfo;
     console.error(error);
-    return { success: false, message: error };
+    return { success: false, message: error, error };
   }
 
   const attachments = email.attachments.map((item, index) => ({

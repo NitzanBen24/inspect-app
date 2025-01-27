@@ -10,9 +10,9 @@ export const formToFields = (data: any,excludedFields: string[]): FieldsObject[]
       return obj;
   }, {});
   
-  queryData.name     = data.form.name;
-  queryData.userid   = data.userId;    
-  queryData.status   = data.status;
+  queryData.name      = data.form.name;
+  queryData.userid    = data.userId;    
+  queryData.status    = data.status;
   queryData.user_name = data.userName;
 
   return [queryData];

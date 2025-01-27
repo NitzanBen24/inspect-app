@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, updateForm } from "../lib/db/forms";
-import { EmailInfo, EmailResult, FieldsObject, FormData, PdfForm } from "../utils/types";
+import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, updateForm, getSearchForms } from "../lib/db/forms";
+import { EmailInfo, EmailResult, FieldsObject, FormData, PdfForm, SearchData } from "../utils/types";
 import { prepareEmail, sendEmail } from "./emailService";
 import { findPdfFile, getAllPDF, getPDFs, preparePdf } from "./pdfService";
 import { fieldsToForm, formToFields } from "../lib/formatData";
 import { getRole } from "../lib/db/users";
 import { appStrings } from "../utils/AppContent";
+import { getEnglishFormName, getHebrewFormName, getTableName, isEmptyProps, validatePDFResult } from "../utils/helper";
 
 /** Remove to AppContent file */
 const tableNamesMap: Record<string, string> = {inspection: 'inspection_forms', elevator: 'equipment_forms', charge: 'equipment_forms'}
@@ -129,6 +130,13 @@ async function _prepareToSend (data: any): Promise<EmailInfo> {
     return email;
 }
 
+
+const _getQueryFields = (obj: Record<string, any>): Record<string, any> => {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, value]) => value) // Filter non-empty values
+    );
+  };
+
 export async function getFormsDataByUserId(userId : string): Promise<any> {
 
     try {
@@ -139,12 +147,7 @@ export async function getFormsDataByUserId(userId : string): Promise<any> {
             return { success: false, message: 'User role was not found!' };
         }
 
-        const pdfFiles = await getAllPDF();             
-        //Check if the service returned an error object
-        if ('error' in pdfFiles) {
-            throw new Error(`Failed to get pdfFiles: ${pdfFiles.error}`);         
-        }
-        
+        const pdfFiles = validatePDFResult(await getAllPDF());        
         const activeForms = await _getUserActiveForms(userId, role, pdfFiles);
 
         return { pdfFiles, activeForms };
@@ -156,11 +159,11 @@ export async function getFormsDataByUserId(userId : string): Promise<any> {
 
 }
 
-export async function handleFormSubmit(data: FormData): Promise<{ success: boolean; message: string; data?:any; error?: unknown }> {
+export async function handleFormSubmit(data: FormData): Promise<{ success?: boolean; message: string; data?:any; error?: unknown }> {
     try {
         
         if (!data?.form) {
-            return { success: false, message: "Missing form data", error: "Invalid input" };
+            return { message: "Missing form data", error: "Invalid input" };
         }        
                 
         const excludedFields = _getExcludedFields(data.form.name);
@@ -187,18 +190,47 @@ export async function handleFormSubmit(data: FormData): Promise<{ success: boole
             emailResult = await sendEmail({ email });
             msg += emailResult.message;            
         }
-
-        if (dbResult?.error || (data.sendMail && !emailResult.success)) {
-            return {
-                success: false,
+        
+        if (dbResult?.error || (data.sendMail && emailResult.error)) {
+            return {                
                 message: dbResult?.error ? appStrings.dataSavedError : emailResult.message,
                 error: dbResult?.error || emailResult.error,
             };
         }                
 
-        return { success: true, message: msg , data};
+        return { message: msg };
+
     } catch (error) {
         console.error("Error in handleFormSubmit:", error);
         return { success: false, message: "An unexpected error occurred", error };
     }
 };
+
+export async function searchForms(query: SearchData): Promise<{ message?: string; data?:any; error?: unknown }>  {
+    
+    try {
+
+        if (!query || isEmptyProps(query)) {
+            return { message: "Missing search fields", error: "Missind fields" };
+        }
+          
+        const queryFields = _getQueryFields(query);
+                
+        const tableName = query.name ? getTableName(query.name) : 'inspection_forms';
+        if (query.name) {            
+            queryFields.name = getEnglishFormName(query.name);           
+        }          
+        
+        const records = await getSearchForms(queryFields, tableName);
+
+        const pdfFiles = validatePDFResult(await getAllPDF());
+        const foundForms =  fieldsToForm(records, findPdfFile(pdfFiles, 'inspection'))
+
+        return { data: foundForms };
+    } catch (error) {
+        console.error("Error in search forms:", { error, query });  
+        return { message: error instanceof Error ? error.message : "An unexpected error occurred", error };
+    }
+    
+    
+}

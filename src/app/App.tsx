@@ -11,16 +11,12 @@ import { Container } from 'react-bootstrap';
 const queryClient = new QueryClient();
 
 const App = () => {    
-    return (
-        <>
+    return (    
         <QueryClientProvider client={queryClient}>
-            <UserProvider>
-                <Container fluid className='h-screen'>
-                    <Main />
-                </Container>
+            <UserProvider>                
+                <Main />                
             </UserProvider>
         </QueryClientProvider>
-        </>
       );
 }
 
