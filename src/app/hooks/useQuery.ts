@@ -2,9 +2,15 @@ import { useQuery, useMutation, UseQueryResult, UseMutationResult, useQueries, U
 import axios, { AxiosError } from "axios";
 import { FetchOptions, QueryConfig } from "../utils/types";
 
+const _apiKey = process.env.NEXT_PUBLIC_API_KEY;  // Access client-side API key
+
 const fetchData = async <T>(path: string): Promise<T> => {
-    try {
-        const { data } = await axios.get(`/api/${path}`);
+    try {        
+        const { data } = await axios.get(`/api/${path}`, {
+            headers: {
+                'Authorization': `Bearer ${_apiKey}`, // Add the API key here
+            }
+        });
         return data;
     } catch (error: any) {
         throw new Error(error.response?.data?.message || 'Failed to fetch data');
@@ -44,7 +50,12 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
 
 // Function to handle POST requests (send data)
 const postData = async <T, R>(path: string, payload: T): Promise<R> => {
-    const { data } = await axios.post(`/api/${path}`, payload);
+    
+    const { data } = await axios.post(`/api/${path}`, payload, {
+        headers: {
+          Authorization: `Bearer ${_apiKey}`,  // Add API key to headers
+        },
+      });
     return data;
 };
 
@@ -77,7 +88,11 @@ export const usePost = <T, R = any>(
 
 // Function to handle PATCH requests (update data)
 const patchData = async <T, R>(path: string, payload: T): Promise<R> => {
-    const { data } = await axios.patch(`/api/${path}`, payload);
+    const { data } = await axios.patch(`/api/${path}`, payload, {
+        headers: {
+          Authorization: `Bearer ${_apiKey}`,  // Add API key to headers
+        },
+      });
     return data;
 };
 
