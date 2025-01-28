@@ -50,7 +50,7 @@ textarea[name="comments"] {
   right: 5px;
 }
 
-.archive-view {
+.archive-block {
   display: block;
 }
 
@@ -67,7 +67,7 @@ textarea[name="comments"] {
 
 
 @media (max-width: 768px) {
-  .archive-view {
+  .archive-block {
     display: none;
   }
 }
