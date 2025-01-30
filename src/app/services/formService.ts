@@ -219,12 +219,14 @@ export async function searchForms(query: SearchData): Promise<{ message?: string
         const tableName = query.name ? getTableName(query.name) : 'inspection_forms';
         if (query.name) {            
             queryFields.name = getEnglishFormName(query.name);           
+        } else {
+            queryFields.name = 'inspection';
         }          
         
         const records = await getSearchForms(queryFields, tableName);
 
         const pdfFiles = validatePDFResult(await getAllPDF());
-        const foundForms =  fieldsToForm(records, findPdfFile(pdfFiles, 'inspection'))
+        const foundForms =  fieldsToForm(records, findPdfFile(pdfFiles, queryFields.name))
 
         return { data: foundForms };
     } catch (error) {
