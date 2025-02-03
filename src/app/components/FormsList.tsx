@@ -37,8 +37,8 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
       openModal(); 
   }
   const {mutate: updateForm } = usePatch(
-    'forms',
-    'data',
+    'forms',    
+    ['userForms',`forms/${user.id}`],
     onUpdateSucces,
     onUpdateError,
   )
@@ -53,7 +53,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   };
   const { mutate: deleteForm } = useDelete(
       'forms', // API path
-      'data', // Query key for invalidation
+      ['userForms',`forms/${user.id}`],
       onDeleteSuccess,
       onDeleteError
   );
@@ -119,7 +119,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
                 <span>{form?.userName}</span>
                 <span>{typeof form?.created === "string" ? form.created.slice(0, 10) : ""}</span>
                 <div>                  
-                  {form.status !== "new" && form.status !== "pending" && (
+                  {form.status !== "new" && form.status !== "pending" && form.status !== 'archive' && (
                     <button
                       className="btn-remove px-1 border-2 border-white bg-black text-white rounded-lg"
                       onClick={(event) => removeForm(event, form)}

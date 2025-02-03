@@ -20,9 +20,8 @@ const fetchData = async <T>(path: string): Promise<T> => {
 export const useFetch = <T>(key: string, path: string, options?: FetchOptions): UseQueryResult<T> => { 
     return useQuery({
         queryKey: [key, path], 
-        queryFn: () => fetchData<T>(path),
-        refetchOnWindowFocus: false,
-        //enabled: Boolean(key && path),
+        queryFn: () => fetchData<T>(path),        
+        refetchOnWindowFocus: false,        
         enabled: options?.enabled ?? true, // Default to true if not specified
         retry: 1,
     });
@@ -30,9 +29,11 @@ export const useFetch = <T>(key: string, path: string, options?: FetchOptions): 
 
 export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number]>[]) => {    
     const queryResults = useQueries({
-        queries: queries.map(({ key, path, options }) => ({
-            queryKey: [key, path],
+        queries: queries.map(({ key, path, options, user }) => ({
+            queryKey: [key, path],//, user?.id
             queryFn: () => fetchData<T[number]>(path),
+            refetchOnMount: true,
+            cacheTime: 1000 * 60 * 5,
             ...options,
         })),
     }) as UseQueryResult<T[number]>[];
@@ -71,6 +72,7 @@ export const usePost = <T, R = any>(
         mutationFn: (payload: T) => postData<T, R>(path, payload),
         onSuccess: (data) => {
             // Invalidate the query using the mutationKey
+            console.log('usePost.onSuccess.mutationKey=>',mutationKey)
             queryClient.invalidateQueries({
                 queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
             });
@@ -125,6 +127,9 @@ export const usePatch = <T, R = any>(
 const deleteData = async <T,R>(path: string, payload: T): Promise<R> => {
     const { data } = await axios.delete(`/api/${path}`, {
         data: payload,
+        headers: {
+            Authorization: `Bearer ${_apiKey}`,  // Add API key to headers
+          },
     });
     return data;
 };

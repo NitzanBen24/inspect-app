@@ -8,6 +8,7 @@ import FormsList from "./FormsList"; // Import your FormsList component
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { getHebrewString, isEmptyProps } from "../utils/helper";
 import { notFound } from "next/navigation";
+import { useUser } from "../hooks/useUser";
 
 interface Props {
   selectForm: (form: PdfForm) => void;
@@ -15,6 +16,7 @@ interface Props {
 
 const Archive = ({ selectForm }: Props) => {
 
+    const { user } = useUser();
     const [display, setDisplay] = useState<boolean>(false)
     const [searchData, setSearchData] = useState({
         name: "",
@@ -46,7 +48,7 @@ const Archive = ({ selectForm }: Props) => {
 
     const { mutate: searchForms } = usePost(
         "forms", // API endpoint
-        "archive", // Query key
+        ['archive',`search/${user.id}`], // Query key
         handleSearchSuccess,
         handleSearchError
     );

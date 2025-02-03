@@ -101,7 +101,7 @@ export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
           try {
               // Load and parse PDF document
               const existingPdfBytes = await fs.promises.readFile(filePath);
-              const pdfDoc = await PDFLibDocument.load(existingPdfBytes);                                          
+              const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));                                          
               const pdfForm = pdfDoc.getForm();  
               
               if (pdfForm) {                 
@@ -145,7 +145,7 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     // Load the original PDF with pdf-lib
     const pdfPath = path.resolve('./public/templates/'+file.name+'.pdf');
     const existingPdfBytes = await fs.promises.readFile(pdfPath);
-    const pdfDoc = await PDFLibDocument.load(existingPdfBytes);
+    const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));    
     
     // Register fontkit to use custom fonts
     pdfDoc.registerFontkit(fontkit);
@@ -157,8 +157,8 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     const fontBytes = fs.readFileSync(fontPath);
     const boldFontBytes = fs.readFileSync(boldFontPath); 
     
-    const hebrewFont = await pdfDoc.embedFont(fontBytes);    
-    const boldFont = await pdfDoc.embedFont(boldFontBytes);
+    const hebrewFont = await pdfDoc.embedFont(new Uint8Array(fontBytes));    
+    const boldFont = await pdfDoc.embedFont(new Uint8Array(boldFontBytes));
 
     // Fill form fields in the main PDF with pdf-lib
     const form = pdfDoc.getForm();
@@ -170,9 +170,9 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
 
       form.getTextField(field.getName()).setText(fieldText);
       if (_containsHebrew(fieldText)) {                
-        if (_containsDigits(fieldText)) {          
-          form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
-        }        
+        // if (_containsDigits(fieldText)) {          
+        //   form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
+        // }        
 
         form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
         form.getTextField(field.getName()).updateAppearances(hebrewFont);        
@@ -197,10 +197,9 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
       }
     }
 
-    // check => maybe only for inspection
-    if (file.name === 'inspection') {
+    if (file.name !== 'storage') {
       _addComments(pdfDoc, file.formFields, hebrewFont);
-    }    
+    }
     
     //Make file read only
     //form.flatten();
@@ -233,7 +232,7 @@ export const getPDFs = async (fileNames: string[]): Promise<PdfForm[]> => {
         try {
             // Load and parse PDF document
             const existingPdfBytes = await fs.promises.readFile(filePath);
-            const pdfDoc = await PDFLibDocument.load(existingPdfBytes);                                          
+            const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));                                          
             const pdfForm = pdfDoc.getForm();                  
             if (pdfForm) {                 
               form.formFields = pdfForm.getFields().map((field) => {                   

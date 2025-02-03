@@ -1,16 +1,18 @@
 import { useFetch, useMultiFetch } from "../hooks/useQuery";
 import FormsList from "../components/FormsList";
 import Form from "../components/Form";
-import { PdfForm, Manufacture, Technicians, FieldsObject } from "../utils/types";
+import { PdfForm, Manufacture, Technicians, FieldsObject, User } from "../utils/types";
 import { useEffect, useMemo, useState } from "react";
 import { useTechnician } from "../hooks/useTechnician";
 import { useManufacture } from "../hooks/useManufactures";
 import { useUser } from "../hooks/useUser";
 import Archvie from "../components/Archive";
+import UploadPhoto from "../components/UploadPhoto";
+import { useQueryClient } from "@tanstack/react-query";
 
 const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm: (form: PdfForm) => void }) => {
   
-  return (
+  return (    
     <>
       {records.map((list, index) =>
         Object.keys(list).map((key) => {
@@ -29,16 +31,16 @@ const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm:
   );
 };
 
-const useHomePageData = (userId: string) => {
+const useHomePageData = (user: User) => {
   const { isLoading, isError, data } = useMultiFetch<[
     { pdfFiles: PdfForm[]; activeForms: PdfForm[] },
     Manufacture[],
     Technicians[],
     FieldsObject[]
   ]>([
-    { key: "data", path: `forms/${userId}` },
-    { key: "manufactures", path: "get-data/manufactures" },
-    { key: "technicians", path: "get-data/technicians" },
+    { key: "userForms", path: `forms/${user.id}`, user: user },
+    { key: "manufactures", path: "get-data/manufactures", user: user },
+    { key: "technicians", path: "get-data/technicians", user: user },
   ]);
 
   const [forms, manufactures, technicians] = (data ?? [{ pdfFiles: [], activeForms: [] }, [], []]) as [
@@ -56,8 +58,11 @@ const HomePage = () => {
   const { manufacturesSet } = useManufacture();
   const [form, setForm] = useState<PdfForm | undefined>();
   const [initialized, setInitialized] = useState(false);
-  const { isLoading, isError, forms, manufactures, technicians } = useHomePageData(user.id.toString());
+  const { isLoading, isError, forms, manufactures, technicians } = useHomePageData(user);
 
+  const queryClient = useQueryClient();
+
+  
   useEffect(() => {    
     if (isLoading || isError || initialized) return;
     
@@ -67,7 +72,9 @@ const HomePage = () => {
     
   }, [isLoading, isError, manufactures, technicians, manufacturesSet, techniciansSet, initialized]);
 
-  const selectForm = (cform: PdfForm) => setForm(cform);
+  const selectForm = (cform: PdfForm) => {
+    setForm(cform);
+  }
   const closeForm = () => setForm(undefined);  
 
 

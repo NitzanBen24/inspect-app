@@ -85,7 +85,7 @@ const Form = ({ form, close }: Props) => {
     }    
     const { mutate: formSubmit, isPending } = usePost(
         'forms',
-        'data',
+        ['userForms',`forms/${user.id}`],
         handleSubmitSuccess,
         handleSubmitError
     );
