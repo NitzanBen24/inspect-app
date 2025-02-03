@@ -7,7 +7,6 @@ import { useTechnician } from "../hooks/useTechnician";
 import { useManufacture } from "../hooks/useManufactures";
 import { useUser } from "../hooks/useUser";
 import Archvie from "../components/Archive";
-import UploadPhoto from "../components/UploadPhoto";
 import { useQueryClient } from "@tanstack/react-query";
 
 const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm: (form: PdfForm) => void }) => {
