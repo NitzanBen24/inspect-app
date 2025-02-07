@@ -11,6 +11,7 @@ import { TechniciansProvider } from './contexts/TechniciansContext';
 import { ManufactureProvider } from './contexts/ManufacturesContext';
 import AppHeader from './components/AppHeader';
 import { Container } from 'react-bootstrap';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 
@@ -24,7 +25,7 @@ const Main = () => {
     
     useEffect(() => {    
         if (userAuth && isAuthResponse(userAuth)) {            
-            logIn(userAuth.user);
+            logIn(userAuth.user);       
         }        
     }, [ userAuth ])
 

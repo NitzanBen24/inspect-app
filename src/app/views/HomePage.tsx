@@ -1,4 +1,4 @@
-import { useFetch, useMultiFetch } from "../hooks/useQuery";
+import { useMultiFetch } from "../hooks/useQuery";
 import FormsList from "../components/FormsList";
 import Form from "../components/Form";
 import { PdfForm, Manufacture, Technicians, FieldsObject, User } from "../utils/types";
@@ -37,7 +37,7 @@ const useHomePageData = (user: User) => {
     Technicians[],
     FieldsObject[]
   ]>([
-    { key: "userForms", path: `forms/${user.id}`, user: user },
+    { key: "forms", path: `forms/${user.id}`, user: user },
     { key: "manufactures", path: "get-data/manufactures", user: user },
     { key: "technicians", path: "get-data/technicians", user: user },
   ]);
@@ -58,9 +58,6 @@ const HomePage = () => {
   const [form, setForm] = useState<PdfForm | undefined>();
   const [initialized, setInitialized] = useState(false);
   const { isLoading, isError, forms, manufactures, technicians } = useHomePageData(user);
-
-  const queryClient = useQueryClient();
-
   
   useEffect(() => {    
     if (isLoading || isError || initialized) return;

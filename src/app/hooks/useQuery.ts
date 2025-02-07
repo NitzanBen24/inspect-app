@@ -17,24 +17,26 @@ const fetchData = async <T>(path: string): Promise<T> => {
     }
 };
 
-export const useFetch = <T>(key: string, path: string, options?: FetchOptions): UseQueryResult<T> => { 
+export const useFetch = <T>(key: string, path: string): UseQueryResult<T> => {     
     return useQuery({
         queryKey: [key, path], 
-        queryFn: () => fetchData<T>(path),        
+        queryFn: () => fetchData<T>(path),                
         refetchOnWindowFocus: false,        
-        enabled: options?.enabled ?? true, // Default to true if not specified
-        retry: 1,
-    });
+        staleTime: 0,
+        cacheTime: 1000 * 60,
+        retry: 2,        
+    } as UseQueryOptions<T, Error>);
 };
 
 export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number]>[]) => {    
     const queryResults = useQueries({
-        queries: queries.map(({ key, path, options, user }) => ({
-            queryKey: [key, path],//, user?.id
-            queryFn: () => fetchData<T[number]>(path),
-            refetchOnMount: true,
+        queries: queries.map(({ key, path }) => ({
+            queryKey: [key],
+            queryFn: () => fetchData<T[number]>(path),                    
+            refetchOnWindowFocus: true, // Ensure fresh data on focus            
+            staleTime: 0,            
             cacheTime: 1000 * 60 * 5,
-            ...options,
+            retry: 2,                   
         })),
     }) as UseQueryResult<T[number]>[];
 
@@ -71,8 +73,7 @@ export const usePost = <T, R = any>(
     return useMutation<R, AxiosError, T>({
         mutationFn: (payload: T) => postData<T, R>(path, payload),
         onSuccess: (data) => {
-            // Invalidate the query using the mutationKey
-            console.log('usePost.onSuccess.mutationKey=>',mutationKey)
+            // Invalidate the query using the mutationKey            
             queryClient.invalidateQueries({
                 queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
             });

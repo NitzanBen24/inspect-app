@@ -38,7 +38,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   }
   const {mutate: updateForm } = usePatch(
     'forms',    
-    ['userForms',`forms/${user.id}`],
+    ['forms'],
     onUpdateSucces,
     onUpdateError,
   )
@@ -53,7 +53,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   };
   const { mutate: deleteForm } = useDelete(
       'forms', // API path
-      ['userForms',`forms/${user.id}`],
+      ['forms'],
       onDeleteSuccess,
       onDeleteError
   );

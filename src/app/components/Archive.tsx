@@ -48,7 +48,7 @@ const Archive = ({ selectForm }: Props) => {
 
     const { mutate: searchForms } = usePost(
         "forms", // API endpoint
-        ['archive',`search/${user.id}`], // Query key
+        ['archive'], // Query key
         handleSearchSuccess,
         handleSearchError
     );
