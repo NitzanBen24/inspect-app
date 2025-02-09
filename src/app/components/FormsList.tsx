@@ -1,13 +1,11 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { useQuery } from "@tanstack/react-query";
-import { FieldsObject, PdfForm } from '../utils/types';
-import { useTechnician } from '../hooks/useTechnician';
+import React, { useState } from 'react';
+import { PdfForm } from '../utils/types';
 import { useDelete, usePatch, usePost } from '../hooks/useQuery';
 import { useUser } from '../hooks/useUser';
 import { AxiosError } from 'axios';
 import Modal from './Modal';
-import { isStorageForm } from '../utils/actions';
+import { isStorageForm, reverseDateDirection } from '../client/utils/formUtil';
 import { getHebrewString } from '../utils/helper';
 import { ChevronDownIcon } from '@heroicons/react/16/solid';
 
@@ -92,6 +90,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
     setShow(!show)
   }
 
+
 //console.log('FormList=>',forms)
   
   return (
@@ -107,7 +106,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
             const isStorage = isStorageForm(form.formFields); // Check once per form
             return (
               <li
-                className={`form-list-item grid grid-cols-6 gap-3 place-items-center border-gray-400 border mb-1 rounded-md ${
+                className={`form-list-item py-1 grid grid-cols-6 gap-3 place-items-center border-gray-400 border mb-1 rounded-md ${
                   isStorage ? "bg-cyan-50" : "bg-white"
                 }`}
                 key={form.name + form?.id}
@@ -117,7 +116,7 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
                 <span>{form.formFields.find((item) => item.name === "customer")?.value || ""}</span>
                 <span>{form.formFields.find((item) => item.name === "provider")?.value || ""}</span>
                 <span>{form?.userName}</span>
-                <span>{typeof form?.created === "string" ? form.created.slice(0, 10) : ""}</span>
+                <span>{typeof form?.created === "string" ? reverseDateDirection(form.created.slice(0, 10)) : ""}</span>
                 <div>                  
                   {form.status !== "new" && form.status !== "pending" && form.status !== 'archive' && (
                     <button

@@ -11,8 +11,7 @@ import { useUser } from '../hooks/useUser';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 import { useTechnician } from '../hooks/useTechnician';
 import { useManufacture } from '../hooks/useManufactures';
-import { isStorageForm } from '../utils/actions';
-import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks } from '../client/utils/formUtil';
+import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks, isStorageForm } from '../client/utils/formUtil';
 import { getHebrewFormName } from '../utils/helper';
 
 

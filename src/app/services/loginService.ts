@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getUserByEmail } from '../lib/dbObject';
 import { User } from '../utils/types';
+import { getUserByEmail } from '../lib/db/users';
 
 
 

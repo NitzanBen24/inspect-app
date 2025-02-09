@@ -1,6 +1,7 @@
 import { FieldsObject, FormField, PdfForm } from "../utils/types";
+import sanitizeHtml from 'sanitize-html';
 
-export const formToFields = (data: any,excludedFields: string[]): FieldsObject[] => {
+export const formToFields = (data: any,excludedFields: string[]): FieldsObject => {
   
   const queryData: FieldsObject = data.form.formFields
     .filter((field: FormField) => field.require === true || excludedFields.includes(field.name))
@@ -15,7 +16,7 @@ export const formToFields = (data: any,excludedFields: string[]): FieldsObject[]
   queryData.status    = data.status;
   queryData.user_name = data.userName;
 
-  return [queryData];
+  return queryData;
 
 }
   
@@ -48,4 +49,17 @@ export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] 
       created: record.created_at,
     };
   });
+};
+
+export const sanitizeFields = (fields: FieldsObject): FieldsObject => {
+    
+    const sanitized: FieldsObject = {};
+    
+    for (const key in fields) {
+        if (fields.hasOwnProperty(key)) {
+            sanitized[key] = sanitizeHtml(fields[key], { allowedTags: [], allowedAttributes: {} });
+        }
+    }
+
+    return sanitized;
 };

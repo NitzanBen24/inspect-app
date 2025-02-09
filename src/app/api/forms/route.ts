@@ -4,7 +4,7 @@ import { handleFormSubmit, searchForms } from "@/app/services/formService";
 import { NextRequest, NextResponse } from "next/server";
 
 
-async function handleFormsPost(payload:any) {
+async function _handleFormsPost(payload:any) {
 
     switch (payload.action) {
         case 'submit':
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             return NextResponse.json({ error: "Missing file to save!" }, { status: 400 });
         }
 
-        const result = await handleFormsPost(payload);
+        const result = await _handleFormsPost(payload);
 
         if (result.error) {
             return NextResponse.json(

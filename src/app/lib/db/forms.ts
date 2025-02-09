@@ -78,7 +78,7 @@ export const getFormById = async (id: string, tableName: string): Promise<Fields
    
 };
 
-export const addNewForm = async (payload: FieldsObject[], tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
+export const addNewForm = async (payload: FieldsObject, tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
 
   if (!tableName || tableName.length === 0) {
     throw new Error('Error table name is missing!');
@@ -94,7 +94,7 @@ export const addNewForm = async (payload: FieldsObject[], tableName: string): Pr
   return { message: 'Data inserted successfully',success: true };
 }
 
-export const updateForm = async (id: string | number, payload: FieldsObject[], tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
+export const updateForm = async (id: string | number, payload: FieldsObject, tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
 
   const { error } = await supabase
     .from(tableName)

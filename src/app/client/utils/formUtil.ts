@@ -13,8 +13,7 @@ export const formatHebrewDate = () => {
     const dd = today.getDate().toString();
     
     return yy + "  " + mmHText + "  " + dd;
-  };
-
+};
 
 // Calculate power value => move to server
 export const calcPower = (formNode:HTMLDivElement | null): number | false => {
@@ -64,11 +63,22 @@ export const addInspectionFields = (formFields: FormField[], formRef: React.Muta
 
 export const generateFormBlocks = (formFields: FormField[]) => {
     return Object.entries(formFieldMap).map(([key, value]) => {
-      return {
-        name: key,
-        fields: formFields.filter(
-          (field: any) => value.includes(field.name) && field.require
-        )
-      };
+        return {            
+            name: key,
+            fields: formFields.filter((field: any) => value.includes(field.name) && field.require)
+        };
     });
-  };
+};
+
+export const isStorageForm = (block: FormField[]): boolean => {     
+    return block.filter((field) => field.name === 'batteries' || field.name === 'capacity' || field.name === 'bmanufacture').some((item) => {
+        if (item.value && item.value.length > 0) {                          
+            return true;            
+        }                       
+        return false;
+    });    
+}
+
+export const reverseDateDirection = (date: string) => {
+    return date.split('-').reverse().join('-')
+}

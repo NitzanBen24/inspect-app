@@ -3,10 +3,11 @@ import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, update
 import { EmailInfo, EmailResult, FieldsObject, FormData, PdfForm, SearchData } from "../utils/types";
 import { prepareEmail, sendEmail } from "./emailService";
 import { findPdfFile, getAllPDF, getPDFs, preparePdf } from "./pdfService";
-import { fieldsToForm, formToFields } from "../lib/formatData";
+import { fieldsToForm, formToFields, sanitizeFields } from "../lib/formatData";
 import { getRole } from "../lib/db/users";
 import { appStrings } from "../utils/AppContent";
 import { getEnglishFormName, getHebrewFormName, getTableName, isEmptyProps, validatePDFResult } from "../utils/helper";
+import sanitizeHtml from 'sanitize-html';
 
 /** Remove to AppContent file */
 const tableNamesMap: Record<string, string> = {inspection: 'inspection_forms', elevator: 'equipment_forms', charge: 'equipment_forms'}
@@ -97,7 +98,7 @@ async function _getUserActiveForms(userId: string, role: string, pdfFiles: PdfFo
     return forms;
 }
 
-async function _saveData (form: PdfForm, fields:FieldsObject[]) {
+async function _saveData (form: PdfForm, fields:FieldsObject) {
     if (!form.id) {
         return await addNewForm(fields, tableNamesMap[form.name]);            
     } else {
@@ -169,7 +170,7 @@ export async function handleFormSubmit(data: FormData): Promise<{ success?: bool
         const excludedFields = _getExcludedFields(data.form.name);
 
         // Prepare data to DB
-        const fields: FieldsObject[] = formToFields(
+        const fields: FieldsObject = formToFields(
             {
                 form: data.form,
                 userId: data.userId,
@@ -178,9 +179,11 @@ export async function handleFormSubmit(data: FormData): Promise<{ success?: bool
             },
             excludedFields,
         );
-        
+
+        const sanitazedFields = sanitizeFields(fields);        
+
         // DB actions
-        const dbResult = await _saveData(data.form, fields);        
+        const dbResult = await _saveData(data.form, sanitazedFields);        
 
         let msg = appStrings.dataSaved;        
         let emailResult: EmailResult = { success: true, message: "" };

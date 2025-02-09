@@ -46,7 +46,7 @@ const Archive = ({ selectForm }: Props) => {
         setError(err.message || "Error fetching forms.");
     };
 
-    const { mutate: searchForms } = usePost(
+    const { mutate: searchRecords } = usePost(
         "forms", // API endpoint
         ['archive'], // Query key
         handleSearchSuccess,
@@ -56,7 +56,7 @@ const Archive = ({ selectForm }: Props) => {
     const search = () => {        
         setLoading(true);
         setError(null);
-        searchForms({search:searchData, action: 'search'});
+        searchRecords({search:searchData, action: 'search'});
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

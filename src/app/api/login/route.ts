@@ -1,4 +1,3 @@
-import { getAllUsers } from '@/app/lib/dbObject';
 import { isUserExists } from '@/app/services/loginService';
 import { NextRequest, NextResponse } from 'next/server';
 import { addUserTkn } from '@/app/utils/authUtils';

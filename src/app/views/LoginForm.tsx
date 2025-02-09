@@ -5,6 +5,13 @@ import { useUser } from '../hooks/useUser';
 import { usePost } from '../hooks/useQuery';
 import Modal from '../components/Modal';
 
+// Email validation regex
+const isValidEmail = (email: string) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+
+// Password validation regex (8-16 characters, at least one special character)
+const isValidPassword = (password: string) =>
+  /^(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,16}$/.test(password);
+
 const LoginForm = () => {
   
   const [username, setUsername] = useState('');
@@ -25,7 +32,21 @@ const LoginForm = () => {
   const {mutate: connectUser } = usePost('login','users',handleLoginSuccess, handleLoginError)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); 
+
+    event.preventDefault();
+
+    if (!isValidEmail(username)) {
+      setMessage('Please enter a valid email address.');
+      openModal();
+      return;
+    }
+    
+    if (!isValidPassword(password)) {      
+      setMessage('Password must be between 8-16 characters and include at least one special character.');
+      openModal();
+      return;
+    }
+
     connectUser({
       email: username,
       password: password
