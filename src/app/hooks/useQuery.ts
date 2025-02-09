@@ -35,8 +35,7 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
             queryFn: () => fetchData<T[number]>(path),                    
             refetchOnWindowFocus: true, // Ensure fresh data on focus            
             staleTime: 0,            
-            cacheTime: 1000 * 60 * 5,
-            retry: 2,                   
+            cacheTime: 1000 * 60,            
         })),
     }) as UseQueryResult<T[number]>[];
 
