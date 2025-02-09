@@ -50,10 +50,6 @@ textarea[name="comments"] {
   right: 5px;
 }
 
-.archive-block {
-  display: block;
-}
-
 
 @media (min-width: 768px) {
   .main-wrapp {
@@ -67,7 +63,5 @@ textarea[name="comments"] {
 
 
 @media (max-width: 768px) {
-  .archive-block {
-    display: none;
-  }
+  
 }

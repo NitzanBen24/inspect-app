@@ -87,7 +87,7 @@ const Archive = ({ selectForm }: Props) => {
             </h2>
         
             {/* Search Form */}
-            {display && <div className="flex gap-2 my-4">
+            {display && <div className="flex w-full flex-col md:flex-row gap-2 my-4">
                 <div>
                     <label>שם טופס:</label>
                     <input
@@ -130,7 +130,7 @@ const Archive = ({ selectForm }: Props) => {
                 </div>
                 <div className="button-wrapp flex items-end">
                     <button
-                        className="border-2 border-black text-black px-4 py-1 mt-2 rounded-lg"
+                        className="border-2 w-full md:w-auto border-black text-black px-4 py-1 mt-2 rounded-lg"
                         type="button"
                         onClick={search}
                         disabled={loading || !Object.values(searchData).some((v) => v)}
