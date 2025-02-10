@@ -6,9 +6,9 @@ import { FormField, PdfForm } from '../utils/types';
 
 
 const _containsHebrew = (text: string) => /[\u0590-\u05FF]/.test(text);
+const _fixRTLNumbers = (text: string): string  =>  text.replace(/(\d+)/g, (match) => match.split('').reverse().join(''));
 const _containsDigits = (text: string) => /\d/.test(text);
-// Detect all digit sequences in the text and reverse them
-const reverseNumbersInHebrewText = (text: string) => text.replace(/\d+/g, (match) => match.split('').reverse().join(''));
+const _reverseNumbersInHebrewText = (text: string) => text.replace(/\d+/g, (match) => match.split('').reverse().join(''));
 
 function _addFormFields(fileName: string): FormField[] {
   const moreFields = ['comments'];
@@ -37,7 +37,7 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
     const lineHeight = fontSize * 1.2;
 
     // Split text by newlines first
-    const lines = comments.value.split('\n').flatMap((line) => _wrapText(line, hebrewFont, fontSize, maxWidth));
+    const lines = comments.value.split('\n').flatMap((line) => _wrapText(_fixRTLNumbers(line), hebrewFont, fontSize, maxWidth));
 
     let yPosition = pageSize.height - 200;
 
@@ -59,12 +59,17 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
     });
   }
 }
-
+/** todo: if a line is only numbers, they revers in the pdf file
+ * _fixRTLNumbers is a good fix if the line combine with numbers and Hebrew text
+ * fix => need to check the line, only numbers or combine with text
+ * Note the numbers are string
+ * use words to check if numbers or letters
+ */
 function _wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
-
+  
   words.forEach((word) => {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
     const testWidth = font.widthOfTextAtSize(testLine, fontSize);
@@ -169,24 +174,15 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
       let fieldText = formField?.value || form.getTextField(field.getName()).getText() || '';      
 
       form.getTextField(field.getName()).setText(fieldText);
-      if (_containsHebrew(fieldText)) {                
-        // if (_containsDigits(fieldText)) {          
-        //   form.getTextField(field.getName()).setText(reverseNumbersInHebrewText(fieldText));
-        // }        
-
+      if (_containsHebrew(fieldText)) {
         form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
-        form.getTextField(field.getName()).updateAppearances(hebrewFont);        
-        
+        form.getTextField(field.getName()).updateAppearances(hebrewFont);
       } else {
         form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
       }
       
     });
-
-    /**
-     * only for inspection form
-     * remove to a function
-     */    
+ 
     let statusField = file.formFields.find((item: FormField) => item.name === 'status')    
     if (statusField?.value) {      
       if (statusField.value == 'complete') {
