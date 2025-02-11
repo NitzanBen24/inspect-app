@@ -6,7 +6,11 @@ import { FormField, PdfForm } from '../utils/types';
 
 
 const _containsHebrew = (text: string) => /[\u0590-\u05FF]/.test(text);
-const _fixRTLNumbers = (text: string): string  =>  text.replace(/(\d+)/g, (match) => match.split('').reverse().join(''));
+const _reverseEnglishAndNumbers = (text: string): string  => {
+    return text.replace(/\b([^\u0590-\u05FF\s]+)\b/g, (match) => {
+        return [...match].reverse().join('');
+    });
+}
 const _containsDigits = (text: string) => /\d/.test(text);
 const _reverseNumbersInHebrewText = (text: string) => text.replace(/\d+/g, (match) => match.split('').reverse().join(''));
 
@@ -37,7 +41,7 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
     const lineHeight = fontSize * 1.2;
 
     // Split text by newlines first
-    const lines = comments.value.split('\n').flatMap((line) => _wrapText(_fixRTLNumbers(line), hebrewFont, fontSize, maxWidth));
+    const lines = comments.value.split('\n').flatMap((line) => _wrapText(line, hebrewFont, fontSize, maxWidth));
 
     let yPosition = pageSize.height - 200;
 
@@ -47,6 +51,9 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
       // Calculate the line width to align it to the right for RTL
       const lineWidth = hebrewFont.widthOfTextAtSize(line, fontSize);
       const xPosition = pageSize.width - margin - lineWidth;
+
+      //also revese parentheses
+      line = _reverseEnglishAndNumbers(line).replace(/[()]/g, (char) => (char === '(' ? ')' : '('));
 
       lastPage.drawText(line, {
         x: xPosition,
@@ -58,33 +65,29 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
       yPosition -= lineHeight;
     });
   }
-}
-/** todo: if a line is only numbers, they revers in the pdf file
- * _fixRTLNumbers is a good fix if the line combine with numbers and Hebrew text
- * fix => need to check the line, only numbers or combine with text
- * Note the numbers are string
- * use words to check if numbers or letters
- */
+} 
+
 function _wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-  
-  words.forEach((word) => {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
 
-    if (testWidth <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
-    }
-  });
+    const words = text.split(' ')
+    const lines: string[] = [];
+    let currentLine = '';
 
-  if (currentLine) lines.push(currentLine);
+    words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
 
-  return lines;
+        if (testWidth <= maxWidth) {
+        currentLine = testLine;
+        } else {
+        lines.push(currentLine);
+        currentLine = word;
+        }
+    });
+
+    if (currentLine) lines.push(currentLine);
+
+    return lines;
 }
 
 // Get all pdf files
@@ -174,7 +177,7 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
       let fieldText = formField?.value || form.getTextField(field.getName()).getText() || '';      
 
       form.getTextField(field.getName()).setText(fieldText);
-      if (_containsHebrew(fieldText)) {
+      if (_containsHebrew(fieldText)) {        
         form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
         form.getTextField(field.getName()).updateAppearances(hebrewFont);
       } else {
