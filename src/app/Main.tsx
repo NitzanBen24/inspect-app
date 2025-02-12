@@ -12,6 +12,7 @@ import { ManufactureProvider } from './contexts/ManufacturesContext';
 import AppHeader from './components/AppHeader';
 import { Container } from 'react-bootstrap';
 import { useQueryClient } from '@tanstack/react-query';
+import { Spinner } from './components/Spinner';
 
 
 
@@ -30,7 +31,7 @@ const Main = () => {
     }, [ userAuth ])
 
     if (isLoading) {
-        return (<div>Checking user</div>)
+        return <Spinner />
     }
 
     const disconnectUser = () => userAuthMutation({});
