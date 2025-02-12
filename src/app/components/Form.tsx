@@ -13,6 +13,7 @@ import { useTechnician } from '../hooks/useTechnician';
 import { useManufacture } from '../hooks/useManufactures';
 import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks, isStorageForm } from '../client/utils/formUtil';
 import { getHebrewFormName } from '../utils/helper';
+import { Spinner } from './Spinner';
 
 
 
@@ -33,6 +34,7 @@ const Form = ({ form, close }: Props) => {
     const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);            
     const [ provider, setProvider ] = useState<string | boolean>(false);     
     const [ message, setMessage ] = useState<string>('');
+    const [ isLoading, setLoading ] = useState<boolean>(false);
     
     const hasStorageForm = useRef<boolean>(false);
     const formRef = useRef<HTMLDivElement | null>(null); 
@@ -74,11 +76,13 @@ const Form = ({ form, close }: Props) => {
     }, [form.formFields])
     
     const handleSubmitSuccess = (res: any) => {        
+        setLoading(false);
         cleanForm();
         setMessage(res.message); 
         openModal();
     }
-    const handleSubmitError = (error: any) => {            
+    const handleSubmitError = (error: any) => {
+        setLoading(false);
         setMessage(error.response?.data?.message || "Error in saving data!");
         openModal();        
     }    
@@ -164,6 +168,8 @@ const Form = ({ form, close }: Props) => {
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
         
+        setLoading(true);
+        
         prepareToSend();
 
         fillFormFields();
@@ -183,7 +189,7 @@ const Form = ({ form, close }: Props) => {
                 form.status = 'pending';
             }            
         }                
-                
+
         formSubmit({
             userId:form.userId || user.id, 
             userName:form.userName || user.name, 
@@ -399,7 +405,7 @@ const Form = ({ form, close }: Props) => {
             <button id='BtnSave' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שמור
             </button>
-
+            {isLoading && <Spinner />}
             {/* Alpha version => Testing */}
             <div ref={ sendRef } className='stagging-send flex mt-5'>
                 <label className='mr-2'>Send to me</label>

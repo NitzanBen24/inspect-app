@@ -8,6 +8,7 @@ import Modal from './Modal';
 import { isStorageForm, reverseDateDirection } from '../client/utils/formUtil';
 import { getHebrewString } from '../utils/helper';
 import { ChevronDownIcon } from '@heroicons/react/16/solid';
+import { Spinner } from './Spinner';
 
 
 
@@ -25,12 +26,15 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   const [ show, setShow ] = useState<boolean>(display);
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);
   const [ message, setMessage ] = useState<string>('');
+  const [ isLoading, setLoading ] = useState<boolean>(false);
 
   const onUpdateSucces = (data: any) => {
+    setLoading(false)
     setMessage(data.message); 
     openModal();
   }
   const onUpdateError = (error: any) => {
+      setLoading(false)
       setMessage(error.message);
       openModal(); 
   }
@@ -41,11 +45,13 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
     onUpdateError,
   )
 
-  const onDeleteSuccess = (data: any) => {
+  const onDeleteSuccess = (data: any) => {    
+    setLoading(false)
     setMessage(data.message); 
     openModal();
   };
   const onDeleteError = (error: AxiosError) => {
+      setLoading(false)
       setMessage(error.message);
       openModal(); 
   };
@@ -57,6 +63,9 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   );
 
   const removeForm = (event: React.MouseEvent, form: PdfForm) => {
+
+    setLoading(true);
+
       const formId = form.id?.toString();
       if (!formId) {
         console.error('Form ID is missing!');
@@ -100,7 +109,8 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
             {getHebrewString(title)}
             {/* <ChevronDown />             */}
             {title && <ChevronDownIcon className="size-6"/>}
-          </h2>          
+          </h2>
+          {isLoading && <Spinner />}
           <ul className='p-0 flex flex-col-reverse'>           
           {show && forms.map((form) => {
             const isStorage = isStorageForm(form.formFields); // Check once per form

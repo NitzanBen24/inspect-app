@@ -8,6 +8,7 @@ import { useManufacture } from "../hooks/useManufactures";
 import { useUser } from "../hooks/useUser";
 import Archvie from "../components/Archive";
 import { useQueryClient } from "@tanstack/react-query";
+import { Spinner } from "../components/Spinner";
 
 const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm: (form: PdfForm) => void }) => {
   
@@ -71,7 +72,7 @@ const HomePage = () => {
   const closeForm = () => setForm(undefined);  
 
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <Spinner />
   if (isError) return <div>Error loading data.</div>;
 
   const sortedRecords = [
