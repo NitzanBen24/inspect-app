@@ -84,7 +84,7 @@ const Form = ({ form, close }: Props) => {
     }    
     const { mutate: formSubmit, isPending } = usePost(
         'forms',
-        ['forms'],
+        ['formRecords'],
         handleSubmitSuccess,
         handleSubmitError
     );
@@ -126,7 +126,7 @@ const Form = ({ form, close }: Props) => {
 
     const prepareToSend = () => { 
 
-        if (form.name === 'inspection') {       //|| form.name === 'בדיקה'
+        if (form.name === 'inspection') {
 
             const newFields = addInspectionFields(form.formFields, formRef);    
             setFields(newFields);

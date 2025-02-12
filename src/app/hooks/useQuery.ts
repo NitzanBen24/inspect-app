@@ -23,7 +23,7 @@ export const useFetch = <T>(key: string, path: string): UseQueryResult<T> => {
         queryFn: () => fetchData<T>(path),                
         refetchOnWindowFocus: false,        
         staleTime: 0,
-        cacheTime: 1000 * 60,
+        cacheTime: 0,
         retry: 2,        
     } as UseQueryOptions<T, Error>);
 };
@@ -35,7 +35,7 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
             queryFn: () => fetchData<T[number]>(path),                    
             refetchOnWindowFocus: true, // Ensure fresh data on focus            
             staleTime: 0,            
-            cacheTime: 1000 * 60,            
+            cacheTime: 0,   
         })),
     }) as UseQueryResult<T[number]>[];
 

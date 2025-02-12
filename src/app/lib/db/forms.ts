@@ -27,7 +27,8 @@ export const getActiveForms = async (tableName: string): Promise<FieldsObject[]>
     const { data, error } = await supabase
         .from(tableName)
         .select('*')
-        .neq('status', 'archive'); // Filter: status not 'archive'
+        .neq('status', 'archive') // Filter: status not 'archive'
+        .order("created_at", { ascending: false }); // Ensure latest data
 
     if (error) {
         throw new Error(`Error fetching forms: ${error.message}`);
@@ -48,7 +49,8 @@ export const getActiveFormsByUserId = async (id: string, tableName: string): Pro
     .from(tableName)
     .select('*')
     .eq('userid', id)
-    .neq('status', 'archive');
+    .neq('status', 'archive')
+    .order("created_at", { ascending: false }); // Ensure latest data
 
     if (error) {
       throw new Error(`Error fetching forms for user ID "${id}" from table "${tableName}": ${error.message}`);

@@ -37,7 +37,7 @@ const useHomePageData = (user: User) => {
     Technicians[],
     FieldsObject[]
   ]>([
-    { key: "forms", path: `forms/${user.id}`, user: user },
+    { key: "formRecords", path: `forms/${user.id}`, user: user },
     { key: "manufactures", path: "get-data/manufactures", user: user },
     { key: "technicians", path: "get-data/technicians", user: user },
   ]);
@@ -56,17 +56,14 @@ const HomePage = () => {
   const { techniciansSet } = useTechnician();
   const { manufacturesSet } = useManufacture();
   const [form, setForm] = useState<PdfForm | undefined>();
-  const [initialized, setInitialized] = useState(false);
   const { isLoading, isError, forms, manufactures, technicians } = useHomePageData(user);
-  
-  useEffect(() => {    
-    if (isLoading || isError || initialized) return;
+
+  useEffect(() => { 
+    if (isLoading || isError) return;
     
     manufacturesSet(manufactures);
     techniciansSet(technicians);
-    setInitialized(true);
-    
-  }, [isLoading, isError, manufactures, technicians, manufacturesSet, techniciansSet, initialized]);
+  }, [isLoading, isError, manufactures, technicians, manufacturesSet, techniciansSet]);
 
   const selectForm = (cform: PdfForm) => {
     setForm(cform);
@@ -84,7 +81,7 @@ const HomePage = () => {
     { sent: user.role !== 'user' ? forms.activeForms.filter((item) => item.status === "sent") : [] }
   ]; 
   
-  // console.log('Home.render=>forms',forms)
+  //console.log('Home.render=>forms',forms)
   
   return (    
     <div className='main-wrapp my-3'>
@@ -101,4 +98,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
