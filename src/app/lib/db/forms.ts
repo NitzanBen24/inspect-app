@@ -1,4 +1,4 @@
-import { FieldsObject, SearchData } from "@/app/utils/types";
+import { ActionResponse, FieldsObject, SearchData } from "@/app/utils/types";
 import { supabase } from "../supabase";
 
 
@@ -80,7 +80,7 @@ export const getFormById = async (id: string, tableName: string): Promise<Fields
    
 };
 
-export const addNewForm = async (payload: FieldsObject, tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
+export const addNewForm = async (payload: FieldsObject, tableName: string): Promise<ActionResponse> => {  
 
   if (!tableName || tableName.length === 0) {
     throw new Error('Error table name is missing!');
@@ -96,7 +96,7 @@ export const addNewForm = async (payload: FieldsObject, tableName: string): Prom
   return { message: 'Data inserted successfully',success: true };
 }
 
-export const updateForm = async (id: string | number, payload: FieldsObject, tableName: string): Promise<{ message: string; success?:boolean; error?: unknown }> => {  
+export const updateForm = async (id: string | number, payload: FieldsObject, tableName: string): Promise<ActionResponse> => {  
 
   const { error } = await supabase
     .from(tableName)
@@ -113,7 +113,7 @@ export const updateForm = async (id: string | number, payload: FieldsObject, tab
 
 };
 
-export const updateFormStatus = async (payload: {id: string , status: string}, tableName: string): Promise<{ message: string; success?: boolean; error?: unknown }> => {
+export const updateFormStatus = async (payload: {id: string , status: string}, tableName: string): Promise<ActionResponse> => {
 
   const { error } = await supabase
     .from(tableName)
@@ -129,7 +129,7 @@ export const updateFormStatus = async (payload: {id: string , status: string}, t
 
 };
 
-export const  deleteForm = async (id:string, tableName: string): Promise<{ message: string; success?: boolean; error?: unknown }> => {
+export const  deleteForm = async (id:string, tableName: string): Promise<ActionResponse> => {
 
   const { error } = await supabase
   .from(tableName)

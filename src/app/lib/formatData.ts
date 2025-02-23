@@ -15,6 +15,7 @@ export const formToFields = (data: any,excludedFields: string[]): FieldsObject =
   queryData.userid    = data.userId;    
   queryData.status    = data.status;
   queryData.user_name = data.userName;
+  queryData.storage   = data.storage;  
 
   return queryData;
 
@@ -32,12 +33,12 @@ export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] 
     }
     
     const formFields: FormField[] = form.formFields.map((formField) => { 
-      const recordFieldValue = record[formField.name.replace('-ls','')];         
+      const recordFieldValue = record[formField.name.replace('-ls','')];      
       return {
         ...formField,
         value: recordFieldValue || '', // Default to empty string if no value in the record
       };
-    });            
+    });    
     
     return {
       name: record.name,
@@ -47,6 +48,7 @@ export const fieldsToForm = (records: FieldsObject[], form: PdfForm): PdfForm[] 
       userId: record.userid,
       userName: record.user_name,
       created: record.created_at,
+      images: record.storage,
     };
   });
 };

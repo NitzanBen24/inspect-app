@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { addNewForm, getActiveForms, getFormById, getActiveFormsByUserId, updateForm, getSearchForms } from "../lib/db/forms";
-import { EmailInfo, EmailResult, FieldsObject, FormData, PdfForm, SearchData } from "../utils/types";
+import { ActionResponse, EmailInfo, EmailResult, FieldsObject, FormPayload, PdfForm, SearchData } from "../utils/types";
 import { prepareEmail, sendEmail } from "./emailService";
 import { findPdfFile, getAllPDF, getPDFs, preparePdf } from "./pdfService";
 import { fieldsToForm, formToFields, sanitizeFields } from "../lib/formatData";
@@ -8,6 +8,7 @@ import { getRole } from "../lib/db/users";
 import { appStrings } from "../utils/AppContent";
 import { getEnglishFormName, getHebrewFormName, getTableName, isEmptyProps, validatePDFResult } from "../utils/helper";
 import sanitizeHtml from 'sanitize-html';
+import { downloadImages } from "./storageService";
 
 /** Remove to AppContent file */
 const tableNamesMap: Record<string, string> = {inspection: 'inspection_forms', elevator: 'equipment_forms', charge: 'equipment_forms'}
@@ -94,7 +95,7 @@ async function _getUserActiveForms(userId: string, role: string, pdfFiles: PdfFo
             fieldsToForm(forms, findPdfFile(pdfFiles, name))
         ),
     ];
-
+    
     return forms;
 }
 
@@ -121,11 +122,10 @@ async function _prepareToSend (data: any): Promise<EmailInfo> {
         storageForms[0].formFields = _addStorageForm(data.form, storageForms[0]);                                                        
         pdfForms.push(storageForms[0]);          
     }           
-                        
+
     // Prepare PDF documents concurrently
-    const pdfDocs = await Promise.all(pdfForms.map((form) => preparePdf(form)));            
-    const { role } = (pdfForms[0].userId) ? await getRole(pdfForms[0].userId) : 'admin';
-    const email = prepareEmail(pdfForms[0].formFields, role, pdfForms[0].name);
+    const pdfDocs = await Promise.all(pdfForms.map((form) => preparePdf(form)));    
+    const email = prepareEmail(pdfForms[0].formFields, data.role, pdfForms[0].name);
     email.attachments = pdfDocs;
     
     return email;
@@ -138,6 +138,63 @@ const _getQueryFields = (obj: Record<string, any>): Record<string, any> => {
     );
   };
 
+const _dataToFields = (data: FormPayload) => {
+    
+    const excludedFields = _getExcludedFields(data.form.name);
+    // Prepare data to DB
+    const fields: FieldsObject = formToFields(
+        {
+            form: data.form,
+            storage: data.form.images || '',
+            userId: data.userId,
+            userName: data.userName,
+            status: data.form.status,
+        },
+        excludedFields,
+    );
+
+    return sanitizeFields(fields); 
+}
+
+const _saveForm = async (payload: FormPayload): Promise<ActionResponse> => {
+
+    try {
+        const fields = _dataToFields(payload);
+        // DB actions
+        /** Refactor: maybe return await _saveData => dont need to check for error */
+        const dbResult = await _saveData(payload.form, fields);    
+                        
+        if (dbResult?.error) {
+            throw new Error(`Error, Failed save Form: ${dbResult.error}`);            
+        }
+    
+        return { message: appStrings.dataSaved }
+    } catch(error) {
+        console.error("Error, can not save Form!", error);
+        return { success: false, message: "An unexpected error occurred, can't save form", error };
+    }
+    
+}
+
+const _sendForm = async (payload: FormPayload) => {
+
+    try {        
+        
+        if (payload.form.images) {            
+            payload.form.images = await downloadImages(payload.form.images);            
+        }
+        
+        const email = await _prepareToSend(payload);
+        
+        return await sendEmail({ email });            
+        
+    } catch(error) {
+        console.error("Error, can not send Form!", error);
+        return { message: "An unexpected error occurred", error };
+    }
+
+}
+
 export async function getFormsDataByUserId(userId : string): Promise<any> {
 
     try {
@@ -148,6 +205,7 @@ export async function getFormsDataByUserId(userId : string): Promise<any> {
             return { success: false, message: 'User role was not found!' };
         }
 
+        //todo => check if validatePDFResult is neccessary 
         const pdfFiles = validatePDFResult(await getAllPDF());        
         const activeForms = await _getUserActiveForms(userId, role, pdfFiles);
 
@@ -160,51 +218,28 @@ export async function getFormsDataByUserId(userId : string): Promise<any> {
 
 }
 
-export async function handleFormSubmit(data: FormData): Promise<{ success?: boolean; message: string; data?:any; error?: unknown }> {
+export async function formSubmit(payload: FormPayload): Promise<{ success?: boolean; message: string; data?:any; error?: unknown }> {
     try {
-        
-        if (!data?.form) {
+   
+        if (!payload?.form) {
             return { message: "Missing form data", error: "Invalid input" };
-        }        
-                
-        const excludedFields = _getExcludedFields(data.form.name);
-
-        // Prepare data to DB
-        const fields: FieldsObject = formToFields(
-            {
-                form: data.form,
-                userId: data.userId,
-                userName: data.userName, // todo: change userName to username
-                status: data.form.status,
-            },
-            excludedFields,
-        );
-
-        const sanitazedFields = sanitizeFields(fields);        
-
-        // DB actions
-        const dbResult = await _saveData(data.form, sanitazedFields);        
-
-        let msg = appStrings.dataSaved;        
-        let emailResult: EmailResult = { success: true, message: "" };
-
-        if (data.sendMail) {
-            const email = await _prepareToSend(data);
-            emailResult = await sendEmail({ email });
-            msg += emailResult.message;            
         }
         
-        if (dbResult?.error || (data.sendMail && emailResult.error)) {
-            return {                
-                message: dbResult?.error ? appStrings.dataSavedError : emailResult.message,
-                error: dbResult?.error || emailResult.error,
-            };
-        }                
+        const saveRes = await _saveForm(payload);        
 
-        return { message: msg };
+        // TodoL handle error => do testing
+        // if (saveRes.error) {
+        //     //return error
+        // }
+
+        if (payload.sendMail) {            
+            return await _sendForm(payload);                 
+        }
+        
+        return saveRes;
 
     } catch (error) {
-        console.error("Error in handleFormSubmit:", error);
+        console.error("Error in FormSubmit:", error);
         return { success: false, message: "An unexpected error occurred", error };
     }
 };

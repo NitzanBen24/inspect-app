@@ -15,14 +15,18 @@ export interface PdfForm {
     userId?: string;
     userName?: string;
     created?: any;
+    images?: any;
 }
 
-export interface FormData {
+export interface FormPayload {
     form: PdfForm;
     userId: string;
     userName: string;
+    role: string;
     sendMail?: boolean;
     hasStorage: boolean;
+    action?: string
+    files?: any[];
 }
 
 export type FieldsObject = {
@@ -123,3 +127,26 @@ export type QueryConfig<T> = {
     user: User;
     options?: Omit<UseQueryOptions<T, Error, T>, "queryKey" | "queryFn">;
 };
+
+export interface UploadPayload {
+    files?: File[];
+    images?: File[];
+    [key: string]: any; // Allows additional dynamic fields
+  }
+
+export interface UploadAttachments {
+    folderName?: string;
+    files?: File[];
+    urls?: string[];
+}
+
+export interface ActionResponse {
+    message: string;
+    success?: boolean;
+    error?: unknown;
+}
+
+export interface ImageData {
+    data: Blob;
+  };
+  

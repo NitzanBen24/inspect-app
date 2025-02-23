@@ -4,9 +4,9 @@ import { FormField, FieldsObject, ListOption, Manufacture, PdfForm, Technicians 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useRef } from 'react';
-import { usePost } from '../hooks/useQuery';
+import { useImageUpload, usePost } from '../hooks/useQuery';
 import Modal from './Modal';
-import { formMessages, formFieldMap, fieldsNameMap, facillties } from '../utils/AppContent';
+import { formMessages, formFieldMap, fieldsNameMap, facillties, appStrings } from '../utils/AppContent';
 import { useUser } from '../hooks/useUser';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 import { useTechnician } from '../hooks/useTechnician';
@@ -14,6 +14,7 @@ import { useManufacture } from '../hooks/useManufactures';
 import { addInspectionFields, calcPower, formatHebrewDate, generateFormBlocks, isStorageForm } from '../client/utils/formUtil';
 import { getHebrewFormName } from '../utils/helper';
 import { Spinner } from './Spinner';
+import AttachFile from './AttachFile';
 
 
 
@@ -31,17 +32,20 @@ const Form = ({ form, close }: Props) => {
     
     const providers = [...new Set(technicians.map((item: Technicians) => item.employer))];
     
+    const [ images, setImages ] = useState<File[] | string[]>([]);
     const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);            
     const [ provider, setProvider ] = useState<string | boolean>(false);     
     const [ message, setMessage ] = useState<string>('');
     const [ isLoading, setLoading ] = useState<boolean>(false);
     
+    const sendMail = useRef(false);
     const hasStorageForm = useRef<boolean>(false);
     const formRef = useRef<HTMLDivElement | null>(null); 
-    const formBlocks = generateFormBlocks(form.formFields);
+    const formBlocks = generateFormBlocks(form.formFields);// todo check if useMemo is helpful here
 
     const sendRef = useRef<HTMLInputElement | null>(null);        
     const dropdownRefs = useRef<SearchableDropdownHandle[]>([]);// Array of DropDown lists refs
+    const attachmentsRef = useRef<{ clear: () => void } | null>(null);
 
     //Ensures the refs are added to the dropdownRefs array when the component is mounted.
     const registerRef = (ref: SearchableDropdownHandle | null) => {
@@ -73,10 +77,11 @@ const Form = ({ form, close }: Props) => {
 
         if (isProvider) setProvider(isProvider);        
         
-    }, [form.formFields])
-    
-    const handleSubmitSuccess = (res: any) => {        
+    }, [form.formFields])    
+
+    const handleSubmitSuccess = (res: any) => {     
         setLoading(false);
+        clearAttchedFiles();
         cleanForm();
         setMessage(res.message); 
         openModal();
@@ -93,9 +98,30 @@ const Form = ({ form, close }: Props) => {
         handleSubmitError
     );
 
-    const goBack = () => {
-        close();
+    // todo: Handle error
+    const handleUploadError = (error: any) => {
+        console.error('Error uploading images: ', error);
     }
+    const handleUploadSuccess = (res: any) => {             
+        attachImagesSorce(res);
+        submitForm(form);
+    }
+    const { mutate: uploadImages } = useImageUpload(
+        'upload', 
+        'images', 
+        handleUploadSuccess,
+        handleUploadError,        
+    );
+
+    const attachImagesSorce = (data: any) => {
+        //add error method to component => stop proccess and pop up modal with the error message
+        if(!data.folderName) {
+            return;
+        }
+        form.images = data.folderName;
+    }
+
+    const goBack = () => close();
 
     const setDate = () => setFields([{['date']: formatHebrewDate()}]);
   
@@ -108,8 +134,7 @@ const Form = ({ form, close }: Props) => {
         formRef.current.querySelectorAll<HTMLElement>('.form-field').forEach((item) => {            
             if (item instanceof HTMLInputElement || item instanceof HTMLTextAreaElement) {                
                 item.value = ''; // Clear the value for input and textarea
-            } 
-            
+            }             
         });
 
         form.formFields.forEach((item) => {            
@@ -122,10 +147,29 @@ const Form = ({ form, close }: Props) => {
             form.formFields = form.formFields.filter((item) => !fieldsToRemove.includes(item.name));    
         }        
         
+        form.status = 'new';
+        delete form.id;         
+
         /**
          * check the array of refs, why so many
          */
         handleClearDropdowns();// Clear all DropDowns
+    }
+
+    const updateFormStatus = (btnId: string) => {
+        
+        if (btnId === 'BtnSave') {       
+            form.status = 'saved';        
+        }
+
+        if (btnId === 'BtnSend') {         
+            if (user.role === 'admin' || user.role === 'supervisor') {
+                form.status = 'sent';
+                sendMail.current = true;
+            } else {
+                form.status = 'pending';
+            }            
+        }
     }
 
     const prepareToSend = () => { 
@@ -152,7 +196,7 @@ const Form = ({ form, close }: Props) => {
             } 
         }
         
-        setDate();
+        setDate();        
 
         // Alpha version => Testing        
         const sendToMe = sendRef.current?.querySelector<HTMLInputElement>('[name="reciver"]');    
@@ -165,42 +209,33 @@ const Form = ({ form, close }: Props) => {
         }       
         
     }
-
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {            
+    
+    const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {            
+        
+        if (!event.currentTarget.id) {
+            console.error('Error can not submit Form!!')
+            setMessage('Something went wrong, can not submit Form!!');
+            openModal()
+        }
         
         setLoading(true);
+        
+        updateFormStatus(event.currentTarget.id);
         
         prepareToSend();
 
         fillFormFields();
-
-        const btnId = event.currentTarget.id;
-        let sendMail = false;
-
-        if (btnId === 'BtnSave') {       
-            form.status = 'saved';        
+    
+        if (images.length > 0) {            
+            uploadImages({
+                images: images as File[],                
+                userId: user?.id
+            });
+        } else {                        
+            submitForm(form);
         }
-
-        if (btnId === 'BtnSend') {         
-            if (user.role === 'admin' || user.role === 'supervisor') {
-                form.status = 'sent';
-                sendMail = true;
-            } else {
-                form.status = 'pending';
-            }            
-        }                
-
-        formSubmit({
-            userId:form.userId || user.id, 
-            userName:form.userName || user.name, 
-            form:form, 
-            sendMail, 
-            hasStorageForm,
-            action: 'submit',
-        });
-        
     };
-     
+
     const fillFormFields = () => {
         const fieldsCollection = formRef.current?.getElementsByClassName('form-field');
         if (fieldsCollection) {
@@ -216,6 +251,18 @@ const Form = ({ form, close }: Props) => {
                 }                 
             });
         }
+    }
+
+    const submitForm = (submissionForm: PdfForm) => {        
+        formSubmit({
+            userId: submissionForm.userId || user.id, 
+            userName: submissionForm.userName || user.name,
+            role: user.role,
+            form: submissionForm, 
+            sendMail: sendMail.current, 
+            hasStorageForm,
+            action: 'submit',
+        });
     }
 
     const setFields = useCallback((fields: FieldsObject[]) => {
@@ -373,7 +420,18 @@ const Form = ({ form, close }: Props) => {
     
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
-    
+
+    // AttachFile methods
+    const updateImages = (files: File[]) => {   
+        setImages(files)
+    }
+
+    const clearAttchedFiles = () => {
+        attachmentsRef.current?.clear();
+        delete form.images;
+        setImages([]);
+    }
+
     return (
         <>        
         
@@ -399,18 +457,23 @@ const Form = ({ form, close }: Props) => {
 
             </div>
 
+            {isLoading && <Spinner />}
+
             <button id='BtnSend' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שלח
             </button>
             <button id='BtnSave' className='w-full border-2 border-black text-blck px-4 mt-3 py-2 rounded-lg' type="button" onClick={handleClick} disabled={isPending}>
                 שמור
             </button>
-            {isLoading && <Spinner />}
+            
+            {form.images ? <div className='py-2 text-right text-green-500'>{appStrings.attchmentsExists}</div>  : <AttachFile ref={attachmentsRef} updateFiles={updateImages}/>}                    
+            
             {/* Alpha version => Testing */}
-            <div ref={ sendRef } className='stagging-send flex mt-5'>
+            <div ref={ sendRef } className='staging-send flex mt-5'>
                 <label className='mr-2'>Send to me</label>
                 <input type="checkbox" name="reciver" defaultChecked={false} id=""/>
             </div>
+            
         </div>
 
         

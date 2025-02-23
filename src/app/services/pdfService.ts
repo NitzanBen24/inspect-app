@@ -1,4 +1,4 @@
-import { PDFDocument as PDFLibDocument, PDFFont, TextAlignment } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, PDFPage, PDFFont, TextAlignment, PDFImage, PDFForm } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import fontkit from '@pdf-lib/fontkit';
@@ -33,6 +33,7 @@ function _addComments(doc: PDFLibDocument, fields: FormField[], hebrewFont: PDFF
   const comments = fields.find((item: FormField) => item.name === 'comments');    
 
   if (comments && comments.value) {
+
     const lastPage = doc.getPage(doc.getPages().length - 1);
     const pageSize = lastPage.getSize();
     const margin = 50;
@@ -90,6 +91,115 @@ function _wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: numb
     return lines;
 }
 
+const _loafPDF = async (path: string): Promise<PDFLibDocument> => {
+    const existingPdfBytes = await fs.promises.readFile(path);
+    return await PDFLibDocument.load(new Uint8Array(existingPdfBytes));                                          
+}
+
+const _embedToPngOrJpg = async (pdf: PDFLibDocument, images: any[]): Promise<PDFImage[]> => {
+    
+    const embedImages = [];
+    for (const img of images) {
+
+        if (!img.data) continue; // Skip if there's an error
+    
+        const fileType = img.data.type; // Extract MIME type
+        if (fileType !== 'image/png' && fileType !== 'image/jpeg' && fileType !== 'image/jpg') {
+            console.warn(`Skipping unsupported image type: ${fileType}`);
+            continue;
+        }
+    
+        const arrayBuffer = await img.data.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+    
+        const image = fileType === 'image/png' 
+            ? await pdf.embedPng(uint8Array) 
+            : await pdf.embedJpg(uint8Array);
+    
+        embedImages.push(image);
+    }        
+
+    return embedImages;
+    
+
+    
+}
+
+const _addImagesToDoc = async (pdf: PDFLibDocument, lastPage: PDFPage, images: PDFImage[]) => {    
+    
+    try {
+        const padding = 20; // Space from the top
+        const imagesPerPage = 4; // Adjust as needed
+        
+        let currentPage: PDFPage | null = null;
+        //Limit to 1 page with max 4 images inside
+        for (let i = 0; i < images.length && i < 4; i++) {
+            
+            const image = images[i];            
+            
+            if (!image) continue;
+
+            if (i % imagesPerPage === 0) {                                
+                currentPage = pdf.addPage(lastPage);
+            }
+        
+            const maxWidth = 260; // Adjust based on PDF size
+            const originalWidth = image.width;
+            const originalHeight = image.height;
+
+            // Scale proportionally
+            const scaleFactor = maxWidth / originalWidth;
+            const newWidth = maxWidth;
+            const newHeight = originalHeight * scaleFactor;
+
+            const x = (i % 2) * 300 + 20; // Two columns        
+            const y = 400 - Math.floor((i % imagesPerPage) / 2) * 300 - padding; // Adjust for padding
+
+            currentPage?.drawImage(image, {
+                x,
+                y,
+                width: newWidth,
+                height: newHeight,
+            });
+        }
+    } catch(error) {
+        console.log('Error, could not add images to pdf:',error);                
+    }
+}
+
+const _markInspectionResult = (pdfForm: PDFForm, pdfDoc: PDFLibDocument, fields: FormField[], bold: PDFFont) => {
+    let statusField = fields.find((item: FormField) => item.name === 'status');
+    if (statusField?.value) {      
+        if (statusField.value == 'complete') {
+            pdfForm.getTextField('approve').updateAppearances(bold);
+        } else if ((statusField.value == 'incomplete')) {
+            pdfForm.getTextField('decline').updateAppearances(bold);
+            if (pdfDoc.getPages().length - 2) {
+                pdfDoc.removePage(pdfDoc.getPages().length - 2)
+            }        
+        }
+    }
+}
+
+const _fillPdfFields = async (pdfForm: PDFForm, pdfFormData: PdfForm, font: PDFFont) => {
+    pdfForm.getFields().forEach((field) => {
+      
+        let formField = pdfFormData.formFields.find((item: FormField) => item.name === field.getName());      
+        let fieldText = formField?.value || pdfForm.getTextField(field.getName()).getText() || '';      
+  
+        /**
+         * todo: check why i use TextAlignment.Right, with that check also reveseEnglishNumbers
+         */
+        pdfForm.getTextField(field.getName()).setText(fieldText);
+        if (_containsHebrew(fieldText)) {         
+          pdfForm.getTextField(field.getName()).setAlignment(TextAlignment.Right);
+          pdfForm.getTextField(field.getName()).updateAppearances(font);
+        } else {
+          pdfForm.getTextField(field.getName()).setAlignment(TextAlignment.Right);
+        }
+        
+      });
+}
 // Get all pdf files
 export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
   const forms: PdfForm[] = []; 
@@ -107,9 +217,8 @@ export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
           const form: PdfForm = { name: file.replace('.pdf', ''), formFields: [], status: 'new' }; // Initialize form                    
 
           try {
-              // Load and parse PDF document
-              const existingPdfBytes = await fs.promises.readFile(filePath);
-              const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));                                          
+              // Load and parse PDF document           
+              const pdfDoc = await _loafPDF(filePath);              
               const pdfForm = pdfDoc.getForm();  
               
               if (pdfForm) {                 
@@ -118,7 +227,7 @@ export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
                   const isDropDown = fieldName.endsWith('-ls');
 
                   return ({
-                    name: fieldName,//isDropDown ? fieldName.replace('-ls','') :
+                    name: fieldName,
                     type: isDropDown ? 'DropDown' : 'TextField',
                     require: field.isRequired(),
                   })
@@ -147,13 +256,12 @@ export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
 };
 
 // Add user data to pdf file
-export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: unknown }> => {
+export const preparePdf = async (pdfFormData: PdfForm): Promise<Uint8Array | { error: unknown }> => {
 
   try {
     // Load the original PDF with pdf-lib
-    const pdfPath = path.resolve('./public/templates/'+file.name+'.pdf');
-    const existingPdfBytes = await fs.promises.readFile(pdfPath);
-    const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));    
+    const pdfPath = path.resolve('./public/templates/'+pdfFormData.name+'.pdf');    
+    const pdfDoc = await _loafPDF(pdfPath);
     
     // Register fontkit to use custom fonts
     pdfDoc.registerFontkit(fontkit);
@@ -168,36 +276,32 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     const hebrewFont = await pdfDoc.embedFont(new Uint8Array(fontBytes));    
     const boldFont = await pdfDoc.embedFont(new Uint8Array(boldFontBytes));
 
-    // Fill form fields in the main PDF with pdf-lib
-    const form = pdfDoc.getForm();
+    // Fill form fields in the main PDF with pdf-lib    
+    const pdfForm = pdfDoc.getForm();
 
-    form.getFields().forEach((field) => {
-      
-      let formField = file.formFields.find((item: FormField) => item.name === field.getName());      
-      let fieldText = formField?.value || form.getTextField(field.getName()).getText() || '';      
-
-      form.getTextField(field.getName()).setText(fieldText);
-      if (_containsHebrew(fieldText)) {        
-        form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
-        form.getTextField(field.getName()).updateAppearances(hebrewFont);
-      } else {
-        form.getTextField(field.getName()).setAlignment(TextAlignment.Right);
-      }
-      
-    });
+    _fillPdfFields(pdfForm, pdfFormData, hebrewFont);
  
-    let statusField = file.formFields.find((item: FormField) => item.name === 'status')    
-    if (statusField?.value) {      
-      if (statusField.value == 'complete') {
-        form.getTextField('approve').updateAppearances(boldFont);
-      } else if ((statusField.value == 'incomplete')) {
-        form.getTextField('decline').updateAppearances(boldFont);        
-        pdfDoc.removePage(pdfDoc.getPages().length - 2)
-      }
+    // only for ispections form
+    if (pdfFormData.name === 'inspection') {    
+        _markInspectionResult(pdfForm, pdfDoc, pdfFormData.formFields, boldFont)        
     }
 
-    if (file.name !== 'storage') {
-      _addComments(pdfDoc, file.formFields, hebrewFont);
+    const pageCount = pdfDoc.getPageCount();    
+    let lastPage: PDFPage | null = null;
+
+    if (pageCount > 0) {
+        [ lastPage ] =  await pdfDoc.copyPages(pdfDoc, [pageCount - 1]);        
+    }
+    
+    if (pdfFormData.name !== 'storage') {        
+        _addComments(pdfDoc, pdfFormData.formFields, hebrewFont);
+    }
+    
+    if (pdfFormData.images && lastPage) {   
+        const embedImages = await _embedToPngOrJpg(pdfDoc, pdfFormData.images);     
+        if (embedImages.length > 0) {
+            await _addImagesToDoc(pdfDoc,lastPage, embedImages)
+        }        
     }
     
     //Make file read only
@@ -208,7 +312,7 @@ export const preparePdf = async (file: PdfForm): Promise<Uint8Array | { error: u
     return pdfBytes;
 
   } catch (pdfError) {
-    console.error('Error generating PDF=>', pdfError);
+    console.error('Error generating PDF:', pdfError);
     return { error: pdfError };     
   }
 };
@@ -229,10 +333,10 @@ export const getPDFs = async (fileNames: string[]): Promise<PdfForm[]> => {
                           
       if (fileNames.includes(form.name)) {              
         try {
-            // Load and parse PDF document
-            const existingPdfBytes = await fs.promises.readFile(filePath);
-            const pdfDoc = await PDFLibDocument.load(new Uint8Array(existingPdfBytes));                                          
+            // Load and parse PDF document                                                    
+            const pdfDoc = await _loafPDF(filePath);
             const pdfForm = pdfDoc.getForm();                  
+            
             if (pdfForm) {                 
               form.formFields = pdfForm.getFields().map((field) => {                   
                 const fieldName = field.getName();
@@ -263,6 +367,7 @@ export const getPDFs = async (fileNames: string[]): Promise<PdfForm[]> => {
   return forms;
 };
 
+//export 
 
 
 /** todo: Remove to Utils repo  */

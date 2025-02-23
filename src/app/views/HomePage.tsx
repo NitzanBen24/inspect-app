@@ -7,7 +7,6 @@ import { useTechnician } from "../hooks/useTechnician";
 import { useManufacture } from "../hooks/useManufactures";
 import { useUser } from "../hooks/useUser";
 import Archvie from "../components/Archive";
-import { useQueryClient } from "@tanstack/react-query";
 import { Spinner } from "../components/Spinner";
 
 const RenderFormsLists = ({ records, selectForm }: { records: any[]; selectForm: (form: PdfForm) => void }) => {
@@ -64,7 +63,7 @@ const HomePage = () => {
     
     manufacturesSet(manufactures);
     techniciansSet(technicians);
-  }, [isLoading, isError, manufactures, technicians, manufacturesSet, techniciansSet]);
+  }, [isLoading, isError, manufactures, technicians]);
 
   const selectForm = (cform: PdfForm) => {
     setForm(cform);
@@ -93,7 +92,7 @@ const HomePage = () => {
           <RenderFormsLists records={sortedRecords} selectForm={selectForm} /> 
           { (user.role !== 'user') && <Archvie selectForm={selectForm}/> }
         </>   
-      )}
+      )}      
     </div>        
   );
 };

@@ -1,6 +1,6 @@
 //import { updateFormStatus, deleteForm } from "@/app/lib/dbObject";
 import { deleteForm, updateFormStatus } from "@/app/lib/db/forms";
-import { handleFormSubmit, searchForms } from "@/app/services/formService";
+import { formSubmit, searchForms } from "@/app/services/formService";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -8,7 +8,7 @@ async function _handleFormsPost(payload:any) {
 
     switch (payload.action) {
         case 'submit':
-            return await handleFormSubmit(payload);            
+            return await formSubmit(payload);            
         case 'search':
             return await searchForms(payload.search);        
     }
@@ -19,7 +19,7 @@ async function _handleFormsPost(payload:any) {
 export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
 
-        const payload = await req.json();                     
+        const payload = await req.json();            
         
         if (!payload) {
             return NextResponse.json({ error: "Missing file to save!" }, { status: 400 });

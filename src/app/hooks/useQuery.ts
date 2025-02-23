@@ -1,6 +1,6 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult, useQueries, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
-import { FetchOptions, QueryConfig } from "../utils/types";
+import { FetchOptions, QueryConfig, UploadPayload } from "../utils/types";
 
 const _apiKey = process.env.NEXT_PUBLIC_API_KEY;  // Access client-side API key
 
@@ -23,7 +23,7 @@ export const useFetch = <T>(key: string, path: string): UseQueryResult<T> => {
         queryFn: () => fetchData<T>(path),                
         refetchOnWindowFocus: false,        
         staleTime: 0,
-        cacheTime: 0,
+        cacheTime: 60 * 1000,
         retry: 2,        
     } as UseQueryOptions<T, Error>);
 };
@@ -35,7 +35,7 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
             queryFn: () => fetchData<T[number]>(path),                    
             refetchOnWindowFocus: true, // Ensure fresh data on focus            
             staleTime: 0,            
-            cacheTime: 0,   
+            cacheTime: 60 * 1000,
         })),
     }) as UseQueryResult<T[number]>[];
 
@@ -157,3 +157,56 @@ export const useDelete = <T,R = any>(
     });
 };
 
+
+const uploadImages = async <R>(path: string, payload: UploadPayload): Promise<R> => {
+    const formData = new FormData();
+    // Append each file to the FormData
+    payload.images?.forEach((img, index) => {            
+      formData.append('image', img);
+    });
+    
+    if (payload.userId) {
+        formData.append('userId', payload.userId)
+    }
+    
+
+    try {
+      const { data } = await axios.post(`/api/${path}`, formData, {
+        headers: {
+          'Authorization': `Bearer ${_apiKey}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return data; // Assuming the response returns an array of image URLs
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Image upload failed');
+    }
+};
+  
+  
+export const useImageUpload = < R = any>(
+    path: string,
+    mutationKey: string | string[], // to invalidate queries related to image upload
+    onSuccess?: (imageUrls: string[]) => void,
+    onError?: (error: AxiosError) => void
+  ) => {
+    const queryClient = useQueryClient();
+  
+    return useMutation<R, AxiosError, UploadPayload>({
+      mutationFn: (payload) => uploadImages<R>(path, payload),
+      onSuccess: (data) => {
+        // Invalidate any queries associated with the mutationKey
+        queryClient.invalidateQueries({
+          queryKey: Array.isArray(mutationKey) ? mutationKey : [mutationKey],
+        });
+  
+        // Call onSuccess callback with the array of image URLs
+        onSuccess?.(data as string[]);
+      },
+      onError: (error) => {
+        // Call onError callback if there is an error
+        onError?.(error);
+      },
+    });
+};

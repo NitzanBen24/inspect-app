@@ -23,7 +23,8 @@ export const appStrings = {
   dataSavedError: 'לא הצלחנו לשמור את הנתונים. אנא נסו שוב או פנו לתמיכה במידה שהבעיה נמשכת.',
   archive: 'ארכיון',
   clear: 'נקה',
-  missigRecords: 'לא נמצאו רשומות מתאימות...'
+  missigRecords: 'לא נמצאו רשומות מתאימות...',
+  attchmentsExists: '..טופס זה כולל תמונות' 
   
 }
 

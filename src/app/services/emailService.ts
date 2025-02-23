@@ -39,6 +39,7 @@ export const prepareEmail = (fields: FormField[], role: string, formName: string
   return options;
 };
 
+// todo: remove success is uneccessary => you can check with error
 export async function sendEmail({ email }: MailOptions): Promise<{ success: boolean; message: string; response?: any; error?: unknown }> {
   
   if (!email.reciver || !email.customer || !email.attachments) {
@@ -68,7 +69,7 @@ export async function sendEmail({ email }: MailOptions): Promise<{ success: bool
     //LOGS
     console.info(sysStrings.email.successMessage)
 
-    return { success: true, message: appStrings.email.success, response: emailResponse };
+    return { success: true, message: appStrings.dataSaved +' '+ appStrings.email.success, response: emailResponse };
     
   } catch (mailError) {
 
