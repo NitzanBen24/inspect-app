@@ -1,8 +1,5 @@
 "use client";
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-
-const supabase = createClientComponentClient();
 
 interface Props {
     updateFiles: (files: File[]) => void,
