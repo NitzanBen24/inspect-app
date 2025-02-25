@@ -21,7 +21,7 @@ const Main = () => {
         'users', 
         'auth', 
         { 
-            refetchOnMount: false,
+            refetchOnMount: true,
             refetchOnWindowFocus: false,
             staleTime: 10 * 60 * 1000,
             cacheTime: 15 * 60 * 1000,
