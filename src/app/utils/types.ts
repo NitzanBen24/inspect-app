@@ -124,8 +124,8 @@ export interface SearchData {
 export type QueryConfig<T> = {
     key: string;
     path: string;
-    user: User;
-    options?: Omit<UseQueryOptions<T, Error, T>, "queryKey" | "queryFn">;
+    user?: User;
+    options?: Record<string, any>;
 };
 
 export interface UploadPayload {

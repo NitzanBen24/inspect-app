@@ -1,12 +1,12 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FormField, FieldsObject, ListOption, Manufacture, PdfForm, Technicians } from '../utils/types';
+import { FormField, FieldsObject, ListOption, PdfForm, Technicians } from '../utils/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useRef } from 'react';
 import { useImageUpload, usePost } from '../hooks/useQuery';
 import Modal from './Modal';
-import { formMessages, formFieldMap, fieldsNameMap, facillties, appStrings } from '../utils/AppContent';
+import { fieldsNameMap, facillties, appStrings } from '../utils/AppContent';
 import { useUser } from '../hooks/useUser';
 import SearchableDropdown, { SearchableDropdownHandle } from './SearchableDropdown';
 import { useTechnician } from '../hooks/useTechnician';
@@ -25,7 +25,7 @@ interface Props {
 }
 
 const Form = ({ form, close }: Props) => {
-
+    //console.log('Form.render=>')
     const { user } = useUser();
     const { technicians } = useTechnician();
     const { manufactures } = useManufacture();
@@ -53,8 +53,6 @@ const Form = ({ form, close }: Props) => {
           dropdownRefs.current.push(ref);
         }
     };    
-
-    //console.log('Form.render=>',form)
 
     useEffect(() => {
         // check if storage form 
@@ -114,7 +112,7 @@ const Form = ({ form, close }: Props) => {
     );
 
     const attachImagesSorce = (data: any) => {
-        //add error method to component => stop proccess and pop up modal with the error message
+        //todo: add error method to component => stop proccess and pop up modal with the error message
         if(!data.folderName) {
             return;
         }

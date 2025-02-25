@@ -17,14 +17,13 @@ const fetchData = async <T>(path: string): Promise<T> => {
     }
 };
 
-export const useFetch = <T>(key: string, path: string): UseQueryResult<T> => {     
+export const useFetch = <T>(key: string, path: string, options: Record<string, any>): UseQueryResult<T> => {     
+    //console.log('options=>', options)
     return useQuery({
-        queryKey: [key, path], 
-        queryFn: () => fetchData<T>(path),                
-        refetchOnWindowFocus: false,        
-        staleTime: 0,
-        cacheTime: 60 * 1000,
-        retry: 2,        
+        queryKey: [key], 
+        queryFn: () => fetchData<T>(path),                       
+        ...options,
+        retry: 2,   
     } as UseQueryOptions<T, Error>);
 };
 
@@ -33,7 +32,7 @@ export const useMultiFetch = <T extends unknown[]>(queries: QueryConfig<T[number
         queries: queries.map(({ key, path }) => ({
             queryKey: [key],
             queryFn: () => fetchData<T[number]>(path),                    
-            refetchOnWindowFocus: true, // Ensure fresh data on focus            
+            refetchOnWindowFocus: false,
             staleTime: 0,            
             cacheTime: 60 * 1000,
         })),

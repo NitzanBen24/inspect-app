@@ -21,8 +21,7 @@ interface Props {
 }
 
 const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
-
-  const { user } = useUser();
+  //console.log('FormList=>')
   const [ show, setShow ] = useState<boolean>(display);
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false);
   const [ message, setMessage ] = useState<string>('');
@@ -98,9 +97,6 @@ const FormsList = ({ forms, openForm, title, addFilter, display }: Props) => {
   const toggleList = () => {
     setShow(!show)
   }
-
-
-//console.log('FormList=>',forms)
   
   return (
       <>
