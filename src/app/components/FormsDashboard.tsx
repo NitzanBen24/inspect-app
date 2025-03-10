@@ -41,8 +41,8 @@ const FormsDashboard = () => {
         {            
             refetchOnMount: true,
             refetchOnWindowFocus: true,
-            staleTime: 5 * 60 * 1000, 
-            cacheTime: 15 * 60 * 1000,
+            // staleTime: 5 * 60 * 1000, 
+            // cacheTime: 15 * 60 * 1000,
         }
     )
     const  forms  = (data ?? { pdfFiles: [], activeForms: [] }) as 
