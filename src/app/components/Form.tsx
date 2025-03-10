@@ -77,12 +77,18 @@ const Form = ({ form, close }: Props) => {
         
     }, [form.formFields])    
 
-    const handleSubmitSuccess = (res: any) => {     
-        setLoading(false);
-        clearAttchedFiles();
-        cleanForm();
-        setMessage(res.message); 
-        openModal();
+    const handleSubmitSuccess = (res: any) => {            
+        if (form.status === 'sent') {
+            form.status = 'send';
+            sendMail.current = true;
+            submitForm(form);
+        } else {
+            setLoading(false);
+            clearAttchedFiles();
+            cleanForm();
+            setMessage(res.message); 
+            openModal();        
+        }
     }
     const handleSubmitError = (error: any) => {
         setLoading(false);
@@ -162,8 +168,7 @@ const Form = ({ form, close }: Props) => {
 
         if (btnId === 'BtnSend') {         
             if (user.role === 'admin' || user.role === 'supervisor') {
-                form.status = 'sent';
-                sendMail.current = true;
+                form.status = 'sent';                
             } else {
                 form.status = 'pending';
             }            

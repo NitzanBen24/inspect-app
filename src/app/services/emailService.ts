@@ -1,6 +1,6 @@
 // app/api/email/sendEmail.ts
 import nodemailer from 'nodemailer';
-import { EmailInfo, FormField } from '../utils/types';
+import { ActionResponse, EmailInfo, FormField } from '../utils/types';
 import { appStrings, sysStrings } from '../utils/AppContent';
 
 const transporter = nodemailer.createTransport({
@@ -69,7 +69,7 @@ export async function sendEmail({ email }: MailOptions): Promise<{ success: bool
     //LOGS
     console.info(sysStrings.email.successMessage)
 
-    return { success: true, message: appStrings.dataSaved +' '+ appStrings.email.success, response: emailResponse };
+    return { success: true, message: appStrings.dataSaved +' '+ appStrings.email.success };
     
   } catch (mailError) {
 

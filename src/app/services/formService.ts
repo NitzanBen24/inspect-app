@@ -168,7 +168,7 @@ const _saveForm = async (payload: FormPayload): Promise<ActionResponse> => {
             throw new Error(`Error, Failed save Form: ${dbResult.error}`);            
         }
     
-        return { message: appStrings.dataSaved }
+        return { success: true, message: appStrings.dataSaved }
     } catch(error) {
         console.error("Error, can not save Form!", error);
         return { success: false, message: "An unexpected error occurred, can't save form", error };
@@ -176,7 +176,7 @@ const _saveForm = async (payload: FormPayload): Promise<ActionResponse> => {
     
 }
 
-const _sendForm = async (payload: FormPayload) => {
+const _sendForm = async (payload: FormPayload): Promise<ActionResponse> => {
 
     try {        
         
@@ -205,7 +205,6 @@ export async function getFormsDataByUserId(userId : string): Promise<any> {
             return { success: false, message: 'User role was not found!' };
         }
 
-        //todo => check if validatePDFResult is neccessary 
         const pdfFiles = validatePDFResult(await getAllPDF());        
         const activeForms = await _getUserActiveForms(userId, role, pdfFiles);
 
@@ -224,9 +223,6 @@ export async function formSubmit(payload: FormPayload): Promise<{ success?: bool
         if (!payload?.form) {
             return { message: "Missing form data", error: "Invalid input" };
         }
-        
-        const saveRes = await _saveForm(payload);        
-
         // TodoL handle error => do testing
         // if (saveRes.error) {
         //     //return error
@@ -234,9 +230,9 @@ export async function formSubmit(payload: FormPayload): Promise<{ success?: bool
 
         if (payload.sendMail) {            
             return await _sendForm(payload);                 
+        } else {
+            return await _saveForm(payload); 
         }
-        
-        return saveRes;
 
     } catch (error) {
         console.error("Error in FormSubmit:", error);
