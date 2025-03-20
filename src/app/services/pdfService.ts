@@ -183,23 +183,32 @@ const _markInspectionResult = (pdfForm: PDFForm, pdfDoc: PDFLibDocument, fields:
 
 const _fillPdfFields = async (pdfForm: PDFForm, pdfFormData: PdfForm, font: PDFFont) => {
     pdfForm.getFields().forEach((field) => {
-      
-        let formField = pdfFormData.formFields.find((item: FormField) => item.name === field.getName());      
-        let fieldText = formField?.value || pdfForm.getTextField(field.getName()).getText() || '';      
-  
-        /**
-         * todo: check why i use TextAlignment.Right, with that check also reveseEnglishNumbers
-         */
-        pdfForm.getTextField(field.getName()).setText(fieldText);
-        if (_containsHebrew(fieldText)) {         
-          pdfForm.getTextField(field.getName()).setAlignment(TextAlignment.Right);
-          pdfForm.getTextField(field.getName()).updateAppearances(font);
-        } else {
-          pdfForm.getTextField(field.getName()).setAlignment(TextAlignment.Right);
+        const fieldName = field.getName();
+        const textField = pdfForm.getTextField(fieldName);
+
+        if (!textField) return; // Ensure field exists before setting values
+
+        let formField = pdfFormData.formFields.find((item: FormField) => item.name === fieldName);
+        let fieldText = formField?.value || textField.getText() || '';
+
+        const hasHebrew = _containsHebrew(fieldText);
+        const hasDigits = _containsDigits(fieldText);
+
+        if (hasHebrew && hasDigits) {
+            fieldText = _reverseNumbersInHebrewText(fieldText);
         }
-        
-      });
-}
+
+        textField.setText(fieldText);
+
+        if (hasHebrew) {
+            textField.setAlignment(TextAlignment.Right);
+            textField.updateAppearances(font);
+        } else {
+            textField.setAlignment(TextAlignment.Left);
+        }
+    });
+};
+
 // Get all pdf files
 export const getAllPDF = async (): Promise<PdfForm[] | { error: unknown }> => {
   const forms: PdfForm[] = []; 
