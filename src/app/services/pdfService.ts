@@ -181,7 +181,34 @@ const _markInspectionResult = (pdfForm: PDFForm, pdfDoc: PDFLibDocument, fields:
     }
 }
 
+const _representatives: any = {
+	['ויקטור']: { name: 'עומר חטאב', phone: '0523477016'},
+	['גרינטופס']: { name: 'יעקוב בוחבוט', phone: '05245319026'},
+}
+
+const _addRep = () => {
+
+}
+
 const _fillPdfFields = async (pdfForm: PDFForm, pdfFormData: PdfForm, font: PDFFont) => {
+
+	
+	// Check facillity Reps
+	const providerValue = pdfFormData.formFields.find(field => field.name === 'provider')?.value || '';
+	const repFacillity = _representatives[providerValue] || {}; // Ensures it's an object
+
+	const repField = pdfFormData.formFields.find(field => field.name === 'rep');
+	const repPhoneField = pdfFormData.formFields.find(field => field.name === 'repphone');
+
+	if (repField && repFacillity.name) {
+		repField.value = repFacillity.name;
+	}
+
+	if (repPhoneField && repFacillity.phone) {
+		repPhoneField.value = repFacillity.phone;
+	}
+
+
     pdfForm.getFields().forEach((field) => {
         const fieldName = field.getName();
         const textField = pdfForm.getTextField(fieldName);
